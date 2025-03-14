@@ -104,7 +104,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            <div className="text-gray-300 whitespace-pre-wrap">
+            <div className="text-gray-300 whitespace-pre-wrap font-minecraft">
               {motdContent}
             </div>
           </div>
