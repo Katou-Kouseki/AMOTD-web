@@ -6,7 +6,7 @@ import base64 from 'base-64';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function Home() {
-  const [motdContent, setMotdContent] = useState('');
+  const [motdContent, setMotdContent] = useState<Array<any>>([]);
   const [styleCode, setStyleCode] = useState('');
   const [serverIcon, setServerIcon] = useState<string | null>(null);
 
@@ -58,7 +58,7 @@ export default function Home() {
           <h2 className="text-2xl mb-4">编辑器</h2>
           <MOTDEditor
             onChange={(value) => {
-              const content = value.flatMap(node => node.children.map(child => child.text)).join('\n');
+              const content = value.flatMap(node => node.children.map(child => child.text));
               setMotdContent(content);
             }}
           />
@@ -71,55 +71,58 @@ export default function Home() {
         </div>
         <div>
           <h2 className="text-2xl mb-4">预览</h2>
-          <div className="border-2 border-gray-800 rounded p-4 bg-gray-900 text-white font-minecraft">
-            <div className="flex items-center mb-4">
-              <div className="relative w-12 h-12 mr-4">
-                <label 
-                  htmlFor="icon-upload"
-                  className="absolute inset-0 cursor-pointer group"
-                >
-                  {serverIcon && (
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center">
-                      <span className="text-white opacity-0 group-hover:opacity-100 text-sm">
-                        上传
-                      </span>
-                    </div>
-                  )}
-                  {serverIcon ? (
-                    <img
-                      src={serverIcon}
-                      className="w-full h-full rounded"
-                      alt="服务器图标"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-700 rounded" />
-                  )}
-                </label>
-              </div>
-              <div>
-                <div className="text-yellow-400 text-xl mb-1">我的服务器</div>
-                <div className="flex items-center text-sm">
-                  <span className="w-2 h-2 bg-green-500 rounded-full mr-2" />
-                  0/20 玩家在线
-                </div>
-              </div>
+          <div className="relative border-2 border-gray-800 rounded p-4 bg-[url('/options_background.png')] bg-repeat text-white font-minecraft">
+          <div className="relative z-10 flex items-center mb-4 pointer-events-auto">
+            
+            <div className="relative w-12 h-12 mr-4">
+              <label 
+                htmlFor="icon-upload"
+                className="absolute inset-0 cursor-pointer group"
+              >
+                {serverIcon && (
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center">
+                    <span className="text-white opacity-0 group-hover:opacity-100 text-sm">
+                      上传
+                    </span>
+                  </div>
+                )}
+                <Image
+                  src={serverIcon ? serverIcon : '/unknown_server.jpg'}
+                  alt="Server Icon"
+                  fill
+                  className="rounded object-cover"
+                />
+              </label>
             </div>
-            <div className="text-gray-300 whitespace-pre-wrap font-minecraft">
-              {motdContent}
+            <div>
+              <div className="text-yellow-400 text-xl mb-1">我的服务器</div>
+              <input
+                type="text"
+                placeholder="请在编辑器中输入文本"
+                className="w-full bg-transparent border-transparent text-white font-minecraft focus:outline-none placeholder-gray-400 cursor-text select-text"
+                value={styleCode}
+                readOnly
+              />
+              <div className="absolute right-4 top-4 flex items-center text-sm">
+                <span className="w-2 h-2 bg-green-500 rounded-full mr-2" />
+                0/20 玩家在线
+              </div>
             </div>
           </div>
-          {styleCode && (
-            <div className="mt-4 p-4 bg-gray-100 rounded">
-              <p className="font-semibold mb-2">你的样式码：</p>
-              <code className="break-all bg-gray-200 p-2 rounded block">{styleCode}</code>
-              <button 
-                onClick={() => navigator.clipboard.writeText(styleCode)}
-                className="mt-2 text-blue-600 hover:text-blue-700 text-sm"
-              >
-                点击复制
-              </button>
-            </div>
-          )}
+          <div className="text-gray-300 whitespace-pre-wrap font-minecraft">
+            {motdContent?.map((node, i) => {
+              if (!node?.children) return null;
+              return (
+                <div key={i}>
+                  {node.children.map((child, j) => (
+                    <span key={j} style={{ color: child.color || '#fff' }}>
+                      {child.text}
+                    </span>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
         </div>
         <input
           type="file"
@@ -128,7 +131,7 @@ export default function Home() {
           className="hidden"
           id="icon-upload"
         />
-
+        </div>
       </div>
     </main>
   );
