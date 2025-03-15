@@ -10,9 +10,10 @@
   },
   "dependencies": {
     "base-64": "^1.0.0",
+    "is-plain-object": "^5.0.0",
     "next": "15.2.1",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "slate": "^0.112.0",
     "slate-react": "^0.112.1",
     "uuid": "^11.1.0"
@@ -20,6 +21,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/base-64": "^1.0.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19.0.4",

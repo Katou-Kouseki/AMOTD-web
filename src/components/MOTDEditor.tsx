@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Slate, Editable, withReact, useSlate } from 'slate-react';
 import { BaseEditor, createEditor, Transforms } from 'slate';
-
+import { Button, ButtonGroup } from '@mui/material';
 
 type CustomElement = { type: 'paragraph'; children: CustomText[] };
 type CustomText = { text: string; color?: string };
@@ -15,23 +15,23 @@ declare module 'slate' {
 }
 
 const MC_COLORS = [
-  { code: '4', name: '大红', color: '#FF5555' },
-  { code: 'c', name: '浅红', color: '#FFAAAA' },
-  { code: '6', name: '土黄', color: '#FFAA00' },
-  { code: 'e', name: '金黄', color: '#FFAA00' },
-  { code: '2', name: '绿', color: '#00AA00' },
-  { code: 'a', name: '浅绿', color: '#55FF55' },
-  { code: 'b', name: '蓝绿', color: '#55FFFF' },
-  { code: '3', name: '天蓝', color: '#00AAAA' },
+  { code: '0', name: '黑', color: '#000000' },
   { code: '1', name: '深蓝', color: '#0000AA' },
-  { code: '9', name: '蓝紫', color: '#AA00AA' },
-  { code: 'd', name: '粉红', color: '#FF55FF' },
+  { code: '2', name: '绿', color: '#00AA00' },
+  { code: '3', name: '天蓝', color: '#00AAAA' },
+  { code: '4', name: '大红', color: '#AA0000' },
   { code: '5', name: '品红', color: '#AA00AA' },
-  { code: 'f', name: '白', color: '#FFFFFF' },
+  { code: '6', name: '土黄', color: '#FFAA00' },
   { code: '7', name: '灰', color: '#AAAAAA' },
   { code: '8', name: '深灰', color: '#555555' },
-  { code: '0', name: '黑', color: '#000000' }
-];
+  { code: '9', name: '蓝紫', color: '#5555FF' },
+  { code: 'a', name: '浅绿', color: '#55FF55' },
+  { code: 'b', name: '蓝绿', color: '#55FFFF' },
+  { code: 'c', name: '浅红', color: '#FF5555' },
+  { code: 'd', name: '粉红', color: '#FF55FF' },
+  { code: 'e', name: '金黄', color: '#FFFF55' },
+  { code: 'f', name: '白', color: '#FFFFFF' }
+].sort((a, b) => a.code.localeCompare(b.code));
 
 // 为组件的props添加类型定义
 interface StyleButtonProps {
@@ -44,33 +44,22 @@ const StyleButton = ({ code, color, label }: StyleButtonProps) => {
   const editor = useSlate();
   
   const handleClick = () => {
-    Transforms.insertText(editor, `§${code}`);
+    Transforms.insertText(editor, `&${code}`);
   };
 
   return (
     <button
       onClick={handleClick}
-      className="w-8 h-8 rounded border-2 border-gray-300 flex flex-col items-center justify-center gap-1"
-      style={{ backgroundColor: ['l', 'o', 'n'].includes(code) ? '#555555' : color }}
+      className="w-8 h-8 rounded border-2 border-gray-300 relative"
+      style={{ backgroundColor: color }}
+      title={label}
     >
-      {code === 'l' && (
-        <svg width="18" height="18" viewBox="0 0 18 18">
-          <path fill="#fff" d="M5 3h6v3H5V3zm0 5h8v3H5V8zm0 5h10v3H5v-3z"/>
-        </svg>
-      )}
-      {code === 'o' && (
-        <svg width="18" height="18" viewBox="0 0 18 18">
-          <path fill="#fff" d="M5 3h10v3H8v9H5V3zm3 5h7v3h-4l-3 4V8z" transform="rotate(-10 9 9)"/>
-        </svg>
-      )}
-      {code === 'n' && (
-        <svg width="18" height="18" viewBox="0 0 18 18">
-          <path fill="#fff" d="M5 3h12v3H5v12h3V6h9v3H8v9H5V3zm9 6h3v6h-3V9z"/>
-        </svg>
-      )}
-      <span className={`text-[9px] font-bold ${['f'].includes(code) ? 'text-black' : 'text-white'}`}>
-        {label}
-      </span>
+      <div 
+        className="absolute inset-0 flex items-center justify-center"
+        style={{ backgroundColor: 'rgba(255,255,255,0.3)' }}
+      >
+        <span className="text-xs font-bold text-black">{code}</span>
+      </div>
     </button>
   );
 };
@@ -80,17 +69,55 @@ const FormatToolbar = () => {
   return (
     <div className="flex flex-col gap-4 mb-4">
       <div className="flex gap-2">
-        <StyleButton code="l" color="#cccccc" label="粗体" />
-        <StyleButton code="o" color="#cccccc" label="斜体" />
-        <StyleButton code="n" color="#cccccc" label="下划线" />
+        <button
+          onClick={() => Transforms.insertText(editor, '§l')}
+          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+          title="粗体"
+        >
+          <span className="font-bold">B</span>
+        </button>
+        <button
+          onClick={() => Transforms.insertText(editor, '§o')}
+          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 italic"
+          title="斜体"
+        >
+          <span className="italic">I</span>
+        </button>
+        <button
+          onClick={() => Transforms.insertText(editor, '§m')}
+          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 relative"
+          title="删除线"
+        >
+          <span className="relative">
+            S
+            <div className="absolute inset-x-0 top-1/2 h-px bg-current transform -translate-y-1/2" />
+          </span>
+        </button>
+        <button
+          onClick={() => Transforms.insertText(editor, '§r')}
+          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+          title="重置样式"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 3V1M8 3C5.23858 3 3 5.23858 3 8C3 10.7614 5.23858 13 8 13C10.7614 13 13 10.7614 13 8C13 6.1455 11.8857 4.502 10.2857 3.71429" stroke="currentColor" strokeLinecap="round"/>
+            <path d="M11 5L13 3L11 1" stroke="currentColor" strokeLinecap="square"/>
+          </svg>
+        </button>
+        <button
+          onClick={() => Transforms.insertText(editor, '§n')}
+          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 underline"
+          title="下划线"
+        >
+          U
+        </button>
       </div>
       <div className="grid grid-cols-8 gap-2">
-        {MC_COLORS.map(({ code, color, name }) => (
+        {MC_COLORS.map((color) => (
           <StyleButton
-            key={code}
-            code={code}
-            color={color}
-            label={name}
+            key={color.code}
+            code={color.code}
+            color={color.color}
+            label={color.name}
           />
         ))}
       </div>
@@ -99,16 +126,22 @@ const FormatToolbar = () => {
 };
 
 export default function MOTDEditor({
-  initialValue = [{ type: 'paragraph', children: [{ text: '' }] }]
+  initialValue = [{ type: 'paragraph', children: [{ text: '' }] }],
+  onChange
 }) {
   const [editor] = useState(() => withReact(createEditor()));
 
   return (
-    <Slate editor={editor} initialValue={[{ type: 'paragraph', children: [{ text: '' }] }]}>
+    <Slate editor={editor} initialValue={initialValue as CustomElement[]}>
       <FormatToolbar />
       <Editable
         className="min-h-[200px] p-4 border rounded bg-gray-100"
         placeholder="输入MOTD内容..."
+        onChange={() => {
+          if (onChange) {
+            onChange(editor.children);
+          }
+        }}
       />
     </Slate>
   );
