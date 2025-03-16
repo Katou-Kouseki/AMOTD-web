@@ -93,6 +93,13 @@ const FormatToolbar = () => {
           </span>
         </button>
         <button
+          onClick={() => Transforms.insertText(editor, '&n')}
+          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 underline"
+          title="下划线"
+        >
+          U
+        </button>
+        <button
           onClick={() => Transforms.insertText(editor, '&r')}
           className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
           title="重置样式"
@@ -101,13 +108,6 @@ const FormatToolbar = () => {
             <path d="M8 3V1M8 3C5.23858 3 3 5.23858 3 8C3 10.7614 5.23858 13 8 13C10.7614 13 13 10.7614 13 8C13 6.1455 11.8857 4.502 10.2857 3.71429" stroke="currentColor" strokeLinecap="round"/>
             <path d="M11 5L13 3L11 1" stroke="currentColor" strokeLinecap="square"/>
           </svg>
-        </button>
-        <button
-          onClick={() => Transforms.insertText(editor, '&n')}
-          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 underline"
-          title="下划线"
-        >
-          U
         </button>
       </div>
       <div className="grid grid-cols-8 gap-2">

@@ -48,40 +48,62 @@ export default function Home() {
     // 空函数
   };
 
-  // 修改解析函数，确保返回一致的数组类型
-  const parseFormattedText = (text: string): Array<Array<{text: string, color: string}>> => {
-    if (!text) return [[{ text: '', color: '#FFFFFF' }]]; // 返回二维数组
+  // 更新parseFormattedText函数支持多种格式
+  const parseFormattedText = (text: string): Array<Array<{text: string, color: string, isBold?: boolean, isItalic?: boolean, isUnderlined?: boolean, isStrikethrough?: boolean}>> => {
+    if (!text) return [[{ text: '', color: '#AAAAAA' }]];
     
-    // 按行分割文本
-    const lines = text.split('\n');
-    // 限制最多显示2行
-    const limitedLines = lines.slice(0, 2);
+    const lines = text.split('\n').slice(0, 2);
+    const allLineSegments: Array<Array<{text: string, color: string, isBold?: boolean, isItalic?: boolean, isUnderlined?: boolean, isStrikethrough?: boolean}>> = [];
     
-    // 存储所有行的分段
-    const allLineSegments: Array<Array<{text: string, color: string}>> = [];
-    
-    // 处理每行文本
-    for (const line of limitedLines) {
-      const segments: Array<{text: string, color: string}> = [];
-      let currentColor = '#FFFFFF';
+    for (const line of lines) {
+      const segments: Array<{text: string, color: string, isBold?: boolean, isItalic?: boolean, isUnderlined?: boolean, isStrikethrough?: boolean}> = [];
+      let currentColor = '#AAAAAA';
       let currentText = '';
+      let isBold = false;
+      let isItalic = false;
+      let isUnderlined = false;
+      let isStrikethrough = false;
+      
       let i = 0;
       let charCount = 0;
-      const maxCharsPerLine = 46; // Minecraft每行限制为46个字符
+      const maxCharsPerLine = 46;
       
       while (i < line.length && charCount < maxCharsPerLine) {
         if ((line[i] === '&' || line[i] === '§') && i + 1 < line.length) {
-          // 处理格式代码
+          // 添加当前文本段落
           if (currentText) {
-            segments.push({ text: currentText, color: currentColor });
+            segments.push({ 
+              text: currentText, 
+              color: currentColor,
+              isBold,
+              isItalic,
+              isUnderlined,
+              isStrikethrough 
+            });
             currentText = '';
           }
           
-          const colorCode = line[i + 1];
-          const colorObj = MC_COLORS.find(c => c.code === colorCode);
+          const code = line[i + 1];
           
+          // 处理颜色
+          const colorObj = MC_COLORS.find(c => c.code === code);
           if (colorObj) {
             currentColor = colorObj.color;
+          }
+          
+          // 处理格式
+          switch(code) {
+            case 'l': isBold = true; break;
+            case 'o': isItalic = true; break;
+            case 'n': isUnderlined = true; break;
+            case 'm': isStrikethrough = true; break;
+            case 'r': // 重置所有样式
+              isBold = false;
+              isItalic = false;
+              isUnderlined = false;
+              isStrikethrough = false;
+              currentColor = '#AAAAAA';
+              break;
           }
           
           i += 2;
@@ -92,8 +114,16 @@ export default function Home() {
         }
       }
       
+      // 添加最后一个文本段落
       if (currentText) {
-        segments.push({ text: currentText, color: currentColor });
+        segments.push({ 
+          text: currentText, 
+          color: currentColor,
+          isBold,
+          isItalic,
+          isUnderlined,
+          isStrikethrough 
+        });
       }
       
       allLineSegments.push(segments);
@@ -131,10 +161,10 @@ export default function Home() {
         </div>
         <div>
           <h2 className="text-2xl mb-4">预览</h2>
-          <div className="relative border-2 border-gray-800 rounded p-4 bg-[url('/options_background.png')] bg-repeat text-white font-minecraft">
-            <div className="relative z-10 flex items-center mb-4 pointer-events-auto">
+          <div className="relative border-2 border-gray-800 rounded p-4 bg-[url('/options_background.png')] bg-repeat text-white font-minecraft" style={{ minHeight: '110px' }}>
+            <div className="relative z-10 flex items-start mb-3 pointer-events-auto">
               
-              <div className="relative w-12 h-12 mr-4">
+              <div className="relative w-16 h-16 mr-4">
                 <label 
                   htmlFor="icon-upload"
                   className="absolute inset-0 cursor-pointer group"
@@ -154,14 +184,24 @@ export default function Home() {
                   />
                 </label>
               </div>
-              <div>
+              <div style={{ width: 'calc(100% - 80px)' }}>
                 <div className="text-white text-base font-normal mb-1">Minecraft Server</div>
-                <div className="w-full bg-transparent border-transparent text-white font-minecraft focus:outline-none placeholder-gray-400 cursor-text select-text flex flex-col">
+                <div className="w-full bg-transparent border-transparent text-[#AAAAAA] font-minecraft focus:outline-none placeholder-gray-400 cursor-text select-text" style={{ minHeight: '2.2em', maxHeight: '2.2em' }}>
                   {motdText ? 
                     parseFormattedText(motdText).map((lineSegments, lineIndex) => (
-                      <div key={lineIndex} className="line-clamp-1 h-[1.2em]">
+                      <div key={lineIndex} className="line-clamp-1 leading-tight">
                         {lineSegments.map((segment, segmentIndex) => (
-                          <span key={`${lineIndex}-${segmentIndex}`} style={getColorClass(segment.color)} className="text-[color:var(--mc-color)]">
+                          <span 
+                            key={`${lineIndex}-${segmentIndex}`} 
+                            style={getColorClass(segment.color)} 
+                            className={`
+                              text-[color:var(--mc-color)]
+                              ${segment.isBold ? 'font-bold' : ''}
+                              ${segment.isItalic ? 'italic' : ''}
+                              ${segment.isUnderlined ? 'underline' : ''}
+                              ${segment.isStrikethrough ? 'line-through' : ''}
+                            `}
+                          >
                             {segment.text}
                           </span>
                         ))}
