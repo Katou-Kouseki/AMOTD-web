@@ -12,20 +12,24 @@ export default function Home() {
   const [motdContent, setMotdContent] = useState<Descendant[]>(initialValue);
   const [serverIcon, setServerIcon] = useState<string | null>(null);
   const [motdText, setMotdText] = useState<string>('');
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+  const [iconPath, setIconPath] = useState<string | null>(null);
+  const [motdUrl, setMotdUrl] = useState<string | null>(null);
 
-  const handleIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      // 此处应使用 HTMLImageElement 来创建 img 元素
+    
+    try {
+      setUploadingIcon(true);
+      
+      // 创建canvas进行裁剪
       const img = new window.Image();
-      img.onload = () => {
+      img.onload = async () => {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
-
+        
         canvas.width = 64;
         canvas.height = 64;
         const scale = Math.min(64 / img.width, 64 / img.height);
@@ -33,19 +37,72 @@ export default function Home() {
         const height = img.height * scale;
         const x = (64 - width) / 2;
         const y = (64 - height) / 2;
-
+        
         ctx.drawImage(img, x, y, width, height);
-        setServerIcon(canvas.toDataURL('image/png'));
+        
+        // 将canvas转换为Blob
+        canvas.toBlob(async (blob) => {
+          if (!blob) return;
+          
+          // 创建FormData并上传
+          const formData = new FormData();
+          formData.append('file', blob, 'icon.png');
+          
+          const response = await fetch('/api/upload-icon', {
+            method: 'POST',
+            body: formData
+          });
+          
+          const result = await response.json();
+          
+          if (result.success) {
+            // 保存图片路径
+            setIconPath(result.filepath);
+            // 设置预览
+            setServerIcon(canvas.toDataURL('image/png'));
+          }
+          
+          setUploadingIcon(false);
+        }, 'image/png');
       };
-      if (e.target && e.target.result) {
-        img.src = e.target.result as string;
-      }
-    };
-    reader.readAsDataURL(file);
+      
+      // 读取文件
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target && e.target.result) {
+          img.src = e.target.result as string;
+        }
+      };
+      reader.readAsDataURL(file);
+      
+    } catch (error) {
+      console.error('处理图片错误:', error);
+      setUploadingIcon(false);
+    }
   };
 
-  const generateStyleCode = () => {
-    // 空函数
+  const generateStyleCode = async () => {
+    try {
+      const response = await fetch('/api/motd', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          icon: iconPath || '',
+          content: motdText
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        const baseUrl = window.location.origin;
+        setMotdUrl(`${baseUrl}${result.url}`);
+      }
+    } catch (error) {
+      console.error('生成样式码错误:', error);
+    }
   };
 
   // 更新parseFormattedText函数支持多种格式
@@ -169,7 +226,11 @@ export default function Home() {
                   htmlFor="icon-upload"
                   className="absolute inset-0 cursor-pointer group"
                 >
-                  {serverIcon && (
+                  {uploadingIcon ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white">
+                      上传中...
+                    </div>
+                  ) : serverIcon && (
                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center">
                       <span className="text-white opacity-0 group-hover:opacity-100 text-sm">
                         上传
@@ -224,6 +285,14 @@ export default function Home() {
             className="hidden"
             id="icon-upload"
           />
+          {motdUrl && (
+            <div className="mt-4 p-2 bg-gray-100 rounded-md break-all">
+              <span className="text-gray-500">MOTD URL:</span>
+              <a href={motdUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-500 hover:underline">
+                {motdUrl}
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </main>

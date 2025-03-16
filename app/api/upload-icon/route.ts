@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile } from 'fs/promises'
-import path from 'path'
-
-const UPLOAD_DIR = path.join(process.cwd(), 'public/uploads')
+import { saveIcon } from '@/services/upload'
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,22 +7,22 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File
 
     if (!file) {
-      return NextResponse.json({ error: '未找到文件' }, { status: 400 })
+      return NextResponse.json({ error: '没有文件上传' }, { status: 400 })
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer())
-    const timestamp = Date.now()
-    const filename = `${timestamp}-${Math.random().toString(36).slice(2)}.${file.name.split('.').pop()}`
-    const filepath = path.join(UPLOAD_DIR, filename)
+    const bytes = await file.arrayBuffer()
+    const buffer = Buffer.from(bytes)
 
-    await writeFile(filepath, buffer)
-    return NextResponse.json({ path: `/uploads/${filename}` })
+    const filepath = await saveIcon(buffer)
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || ''
 
+    return NextResponse.json({ 
+      success: true, 
+      filepath,
+      absolutePath: `${baseUrl}${filepath}`
+    })
   } catch (error) {
     console.error('上传错误:', error)
-    return NextResponse.json(
-      { error: '文件上传失败' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: '上传失败' }, { status: 500 })
   }
 }
