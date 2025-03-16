@@ -12,7 +12,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       id,
-      url: `/api/motd/${id}`
+      url: `/api/motd/${id}`,
+      fullUrl: `${baseUrl}/api/motd/${id}`
     });
   } catch (error) {
     console.error('保存MOTD错误:', error);

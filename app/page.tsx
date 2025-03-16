@@ -1,15 +1,14 @@
 'use client';
 import Image from "next/image";
 import { useState } from 'react';
-import MOTDEditor, { CustomElement, CustomText, MC_COLORS } from '@/components/MOTDEditor';
-import { Descendant, Element } from 'slate';
+import MOTDEditor, { CustomElement, MC_COLORS } from '@/components/MOTDEditor';
+import { Descendant } from 'slate';
 
 export default function Home() {
-  const initialValue: CustomElement[] = [{ 
+  const initialValue: CustomElement[] = [{
     type: 'paragraph' as const, 
     children: [{ text: '' }] 
   }];
-  const [motdContent, setMotdContent] = useState<Descendant[]>(initialValue);
   const [serverIcon, setServerIcon] = useState<string | null>(null);
   const [motdText, setMotdText] = useState<string>('');
   const [uploadingIcon, setUploadingIcon] = useState(false);
@@ -197,7 +196,50 @@ export default function Home() {
   };
 
   return (
-    <main className="container mx-auto p-8">
+    <main className="container mx-auto p-8 relative">
+      {/* 社交媒体图标 */}
+      <div className="absolute right-8 top-4 flex items-center space-x-4">
+        <a 
+          href="https://github.com/x1aoren/amotd-web" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="hover:opacity-80 transition-opacity"
+        >
+          <Image 
+            src="/github.svg" 
+            alt="GitHub" 
+            width={24} 
+            height={24} 
+          />
+        </a>
+        <a 
+          href="https://mcobs.cn" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="hover:opacity-80 transition-opacity"
+        >
+          <Image 
+            src="/mcobs.png" 
+            alt="MCOBS" 
+            width={24} 
+            height={24} 
+          />
+        </a>
+        <a 
+          href="https://space.bilibili.com/3546635921524900" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="hover:opacity-80 transition-opacity"
+        >
+          <Image 
+            src="/bilibili.svg" 
+            alt="bilibili" 
+            width={24} 
+            height={24} 
+          />
+        </a>
+      </div>
+      
       <h1 className="text-4xl font-bold mb-8">Minecraft MOTD 生成器</h1>
       <div className="grid grid-cols-2 gap-8">
         <div>
@@ -205,7 +247,6 @@ export default function Home() {
           <MOTDEditor
             initialValue={initialValue}
             onChange={(value: Descendant[], plainText: string) => {
-              setMotdContent(value);
               setMotdText(plainText);
             }}
           />
@@ -295,6 +336,36 @@ export default function Home() {
           )}
         </div>
       </div>
+      <footer className="mt-16 pt-8 border-t border-gray-200 text-center text-gray-500 text-sm">
+        <div className="mb-2">
+          Minecraft MOTD 生成器 v0.1.0
+        </div>
+        <div className="flex items-center justify-center space-x-4">
+          <a 
+            href="https://beian.miit.gov.cn/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="hover:text-gray-700"
+          >
+            鄂ICP备2024086021号
+          </a>
+          <a 
+            href="https://beian.mps.gov.cn/#/query/webSearch?code=42050302000448" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center hover:text-gray-700"
+          >
+            <Image 
+              src="/beian.png" 
+              alt="备案图标" 
+              width={14} 
+              height={14} 
+              className="mr-1" 
+            />
+            <span>鄂公网安备42050302000448号</span>
+          </a>
+        </div>
+      </footer>
     </main>
   );
 }

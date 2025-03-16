@@ -1,9 +1,10 @@
 # Minecraft MOTD 生成器
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub stars](https://img.shields.io/github/stars/yourusername/amotd-web?style=social)](https://github.com/yourusername/amotd-web/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/x1aoren/amotd-web?style=social)](https://github.com/x1aoren/amotd-web/stargazers)
 
 一个现代化的Minecraft服务器MOTD生成和预览工具，支持完整的Minecraft格式化代码和自定义服务器图标。
+主要针对MOTD插件而制作
 
 ## 功能特点
 
@@ -13,7 +14,18 @@
 - 生成样式码分享链接
 - 符合Minecraft UI设计风格的界面
 
+## 贡献者
+
+感谢以下贡献者对本项目的支持：
+
+<a href="https://github.com/x1aoren">
+  <img src="https://github.com/x1aoren.png" width="50" height="50" alt="x1aoren" />
+</a>
+
 ## 快速开始
+
+git clone https://github.com/yourusername/amotd-web.git
+cd amotd-web
 
 ### 安装依赖
 
@@ -43,21 +55,26 @@ yarn dev
 ## 项目架构
 
 amotd-web/
+│
 ├── app/ # Next.js App Router
 │ ├── api/ # API路由
 │ │ ├── motd/ # MOTD相关API
 │ │ └── upload-icon/ # 图标上传API
 │ └── page.tsx # 主页面
+│
 ├── public/ # 静态资源
 │ ├── uploads/ # 上传的服务器图标 (不纳入版本控制)
 │ └── motds/ # 生成的MOTD数据 (不纳入版本控制)
+│
 ├── src/ # 源代码
 │ ├── components/ # 组件
 │ │ └── MOTDEditor.tsx # MOTD编辑器组件
 │ └── services/ # 服务
 │ ├── motd.ts # MOTD数据处理
 │ └── upload.ts # 文件上传处理
+│
 └── tailwind.config.js # Tailwind配置
+
 
 ## 贡献指南
 
@@ -66,33 +83,11 @@ amotd-web/
 ### 贡献流程
 
 1. Fork本仓库
-2. 创建您的特性分支 (`git checkout -b feature/amazing-feature`)
-3. 提交您的更改 (`git commit -m 'Add some amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
+2. 创建您的分支 
+3. 提交您的更改 
+4. 推送到分支
 5. 打开Pull Request
 
-### 开发环境设置
-
-1. 克隆仓库
-```bash
-git clone https://github.com/yourusername/amotd-web.git
-cd amotd-web
-```
-
-2. 安装依赖
-```bash
-npm install
-```
-
-3. 创建必要的目录
-```bash
-mkdir -p public/uploads public/motds
-```
-
-4. 启动开发服务器
-```bash
-npm run dev
-```
 
 ### 代码规范
 

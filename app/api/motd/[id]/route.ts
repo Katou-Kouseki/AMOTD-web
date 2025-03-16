@@ -13,6 +13,18 @@ export async function GET(
       return NextResponse.json({ error: '找不到MOTD数据' }, { status: 404 });
     }
     
+    // 获取当前请求的主机和协议信息
+    const host = request.headers.get('host') || '';
+    const protocol = request.headers.get('x-forwarded-proto') || 'http';
+    const baseUrl = `${protocol}://${host}`;
+    
+    // 确保icon路径是完整的绝对路径
+    if (motdData.icon && !motdData.icon.startsWith('http')) {
+      motdData.icon = motdData.icon.startsWith('/') 
+        ? `${baseUrl}${motdData.icon}` 
+        : `${baseUrl}/${motdData.icon}`;
+    }
+    
     return NextResponse.json(motdData);
   } catch (error) {
     console.error('获取MOTD错误:', error);
