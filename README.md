@@ -24,7 +24,7 @@
 
 ## 快速开始
 
-git clone https://github.com/yourusername/amotd-web.git
+git clone https://github.com/x1aoren/amotd-web.git
 cd amotd-web
 
 ### 安装依赖
