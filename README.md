@@ -54,24 +54,37 @@ yarn dev
 
 ## 项目架构
 
-## 项目架构
+amotd-web/
+- app/                     # Next.js App Router
 
-**amotd-web/**  
-&nbsp;&nbsp;**├─ app/**　—　Next.js App Router  
-&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;**├─ api/**　—　API路由  
-&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;**├─ motd/**　—　MOTD相关API  
-&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;**└─ upload-icon/**　—　图标上传API  
-&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;**└─ page.tsx**　—　主页面  
-&nbsp;&nbsp;**├─ public/**　—　静态资源  
-&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;**├─ uploads/**　—　上传的服务器图标 (不纳入版本控制)  
-&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;**└─ motds/**　—　生成的MOTD数据 (不纳入版本控制)  
-&nbsp;&nbsp;**├─ src/**　—　源代码  
-&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;**├─ components/**　—　组件  
-&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;**└─ MOTDEditor.tsx**　—　MOTD编辑器组件  
-&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;**└─ services/**　—　服务  
-&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**├─ motd.ts**　—　MOTD数据处理  
-&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**└─ upload.ts**　—　文件上传处理  
-&nbsp;&nbsp;**└─ tailwind.config.js**　—　Tailwind配置
+  - api/                   # API路由
+
+    - motd/                # MOTD相关API
+
+    - upload-icon/         # 图标上传API
+
+  - page.tsx               # 主页面
+
+- public/                  # 静态资源
+
+  - uploads/               # 上传的服务器图标 (不纳入版本控制)
+
+  - motds/                 # 生成的MOTD数据 (不纳入版本控制)
+
+- src/                     # 源代码
+
+  - components/            # 组件
+
+    - MOTDEditor.tsx       # MOTD编辑器组件
+
+  - services/              # 服务
+
+    - motd.ts              # MOTD数据处理
+
+    - upload.ts            # 文件上传处理
+
+- tailwind.config.js       # Tailwind配置
+
 
 
 ## 贡献指南
