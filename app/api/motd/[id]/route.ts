@@ -1,16 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getMOTD } from '@/services/motd';
 
-// 如果使用 Next.js 15.2.1，需要修改参数类型
-type Params = { params: { id: string } };
-
-// 修改函数签名，显式声明返回类型
 export async function GET(
   request: NextRequest,
-  context: Params
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   try {
-    const id = context.params.id;
+    const { id } = await params;
     const motdData = await getMOTD(id);
     
     if (!motdData) {
