@@ -1,14 +1,17 @@
 'use client';
 import Image from "next/image";
 import { useState } from 'react';
-import MOTDEditor from '@/components/MOTDEditor';
-import base64 from 'base-64';
-import { v4 as uuidv4 } from 'uuid';
+import MOTDEditor, { CustomElement, CustomText, MC_COLORS } from '@/components/MOTDEditor';
+import { Descendant, Element } from 'slate';
 
 export default function Home() {
-  const [motdContent, setMotdContent] = useState<Array<any>>([]);
-  const [styleCode, setStyleCode] = useState('');
+  const initialValue: CustomElement[] = [{ 
+    type: 'paragraph' as const, 
+    children: [{ text: '' }] 
+  }];
+  const [motdContent, setMotdContent] = useState<Descendant[]>(initialValue);
   const [serverIcon, setServerIcon] = useState<string | null>(null);
+  const [motdText, setMotdText] = useState<string>('');
 
   const handleIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -42,12 +45,68 @@ export default function Home() {
   };
 
   const generateStyleCode = () => {
-    const data = {
-      content: motdContent,
-      icon: serverIcon
-    };
-    const encoded = base64.encode(JSON.stringify(data));
-    setStyleCode(`${window.location.origin}/motd/${encoded}`);
+    // 空函数
+  };
+
+  // 修改解析函数，确保返回一致的数组类型
+  const parseFormattedText = (text: string): Array<Array<{text: string, color: string}>> => {
+    if (!text) return [[{ text: '', color: '#FFFFFF' }]]; // 返回二维数组
+    
+    // 按行分割文本
+    const lines = text.split('\n');
+    // 限制最多显示2行
+    const limitedLines = lines.slice(0, 2);
+    
+    // 存储所有行的分段
+    const allLineSegments: Array<Array<{text: string, color: string}>> = [];
+    
+    // 处理每行文本
+    for (const line of limitedLines) {
+      const segments: Array<{text: string, color: string}> = [];
+      let currentColor = '#FFFFFF';
+      let currentText = '';
+      let i = 0;
+      let charCount = 0;
+      const maxCharsPerLine = 46; // Minecraft每行限制为46个字符
+      
+      while (i < line.length && charCount < maxCharsPerLine) {
+        if ((line[i] === '&' || line[i] === '§') && i + 1 < line.length) {
+          // 处理格式代码
+          if (currentText) {
+            segments.push({ text: currentText, color: currentColor });
+            currentText = '';
+          }
+          
+          const colorCode = line[i + 1];
+          const colorObj = MC_COLORS.find(c => c.code === colorCode);
+          
+          if (colorObj) {
+            currentColor = colorObj.color;
+          }
+          
+          i += 2;
+        } else {
+          currentText += line[i];
+          i++;
+          charCount++;
+        }
+      }
+      
+      if (currentText) {
+        segments.push({ text: currentText, color: currentColor });
+      }
+      
+      allLineSegments.push(segments);
+    }
+    
+    return allLineSegments;
+  };
+
+  // 在组件顶部添加这个帮助函数
+  const getColorClass = (color: string) => {
+    // 设置一个自定义属性名
+    const style = { '--mc-color': color } as React.CSSProperties;
+    return style;
   };
 
   return (
@@ -57,9 +116,10 @@ export default function Home() {
         <div>
           <h2 className="text-2xl mb-4">编辑器</h2>
           <MOTDEditor
-            onChange={(value) => {
-              const content = value.flatMap(node => node.children.map(child => child.text));
-              setMotdContent(content);
+            initialValue={initialValue}
+            onChange={(value: Descendant[], plainText: string) => {
+              setMotdContent(value);
+              setMotdText(plainText);
             }}
           />
           <button 
@@ -72,65 +132,58 @@ export default function Home() {
         <div>
           <h2 className="text-2xl mb-4">预览</h2>
           <div className="relative border-2 border-gray-800 rounded p-4 bg-[url('/options_background.png')] bg-repeat text-white font-minecraft">
-          <div className="relative z-10 flex items-center mb-4 pointer-events-auto">
-            
-            <div className="relative w-12 h-12 mr-4">
-              <label 
-                htmlFor="icon-upload"
-                className="absolute inset-0 cursor-pointer group"
-              >
-                {serverIcon && (
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center">
-                    <span className="text-white opacity-0 group-hover:opacity-100 text-sm">
-                      上传
-                    </span>
-                  </div>
-                )}
-                <Image
-                  src={serverIcon ? serverIcon : '/unknown_server.jpg'}
-                  alt="Server Icon"
-                  fill
-                  className="rounded object-cover"
-                />
-              </label>
-            </div>
-            <div>
-              <div className="text-yellow-400 text-xl mb-1">我的服务器</div>
-              <input
-                type="text"
-                placeholder="请在编辑器中输入文本"
-                className="w-full bg-transparent border-transparent text-white font-minecraft focus:outline-none placeholder-gray-400 cursor-text select-text"
-                value={styleCode}
-                readOnly
-              />
-              <div className="absolute right-4 top-4 flex items-center text-sm">
-                <span className="w-2 h-2 bg-green-500 rounded-full mr-2" />
-                0/20 玩家在线
+            <div className="relative z-10 flex items-center mb-4 pointer-events-auto">
+              
+              <div className="relative w-12 h-12 mr-4">
+                <label 
+                  htmlFor="icon-upload"
+                  className="absolute inset-0 cursor-pointer group"
+                >
+                  {serverIcon && (
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center">
+                      <span className="text-white opacity-0 group-hover:opacity-100 text-sm">
+                        上传
+                      </span>
+                    </div>
+                  )}
+                  <Image
+                    src={serverIcon ? serverIcon : '/unknown_server.jpg'}
+                    alt="Server Icon"
+                    fill
+                    className="rounded object-cover"
+                  />
+                </label>
+              </div>
+              <div>
+                <div className="text-white text-base font-normal mb-1">Minecraft Server</div>
+                <div className="w-full bg-transparent border-transparent text-white font-minecraft focus:outline-none placeholder-gray-400 cursor-text select-text flex flex-col">
+                  {motdText ? 
+                    parseFormattedText(motdText).map((lineSegments, lineIndex) => (
+                      <div key={lineIndex} className="line-clamp-1 h-[1.2em]">
+                        {lineSegments.map((segment, segmentIndex) => (
+                          <span key={`${lineIndex}-${segmentIndex}`} style={getColorClass(segment.color)} className="text-[color:var(--mc-color)]">
+                            {segment.text}
+                          </span>
+                        ))}
+                      </div>
+                    )) : 
+                    <div className="text-gray-400">请在编辑器中输入文本</div>
+                  }
+                </div>
+                <div className="absolute right-4 top-4 flex items-center text-sm">
+                  <span className="w-2 h-2 bg-green-500 rounded-full mr-2" />
+                  0/20 玩家在线
+                </div>
               </div>
             </div>
           </div>
-          <div className="text-gray-300 whitespace-pre-wrap font-minecraft">
-            {motdContent?.map((node, i) => {
-              if (!node?.children) return null;
-              return (
-                <div key={i}>
-                  {node.children.map((child, j) => (
-                    <span key={j} style={{ color: child.color || '#fff' }}>
-                      {child.text}
-                    </span>
-                  ))}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-        <input
-          type="file"
-          accept="image/png, image/jpeg"
-          onChange={handleIconUpload}
-          className="hidden"
-          id="icon-upload"
-        />
+          <input
+            type="file"
+            accept="image/png, image/jpeg"
+            onChange={handleIconUpload}
+            className="hidden"
+            id="icon-upload"
+          />
         </div>
       </div>
     </main>

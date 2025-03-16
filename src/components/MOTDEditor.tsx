@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { Slate, Editable, withReact, useSlate } from 'slate-react';
-import { BaseEditor, createEditor, Transforms } from 'slate';
-import { Button, ButtonGroup } from '@mui/material';
+import { BaseEditor, createEditor, Transforms, Descendant, Node } from 'slate';
 
-type CustomElement = { type: 'paragraph'; children: CustomText[] };
-type CustomText = { text: string; color?: string };
+export type CustomElement = { type: 'paragraph'; children: CustomText[] };
+export type CustomText = { text: string; color?: string };
 
 declare module 'slate' {
   interface CustomTypes {
@@ -14,7 +13,7 @@ declare module 'slate' {
   }
 }
 
-const MC_COLORS = [
+export const MC_COLORS = [
   { code: '0', name: '黑', color: '#000000' },
   { code: '1', name: '深蓝', color: '#0000AA' },
   { code: '2', name: '绿', color: '#00AA00' },
@@ -70,21 +69,21 @@ const FormatToolbar = () => {
     <div className="flex flex-col gap-4 mb-4">
       <div className="flex gap-2">
         <button
-          onClick={() => Transforms.insertText(editor, '§l')}
+          onClick={() => Transforms.insertText(editor, '&l')}
           className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
           title="粗体"
         >
           <span className="font-bold">B</span>
         </button>
         <button
-          onClick={() => Transforms.insertText(editor, '§o')}
+          onClick={() => Transforms.insertText(editor, '&o')}
           className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 italic"
           title="斜体"
         >
           <span className="italic">I</span>
         </button>
         <button
-          onClick={() => Transforms.insertText(editor, '§m')}
+          onClick={() => Transforms.insertText(editor, '&m')}
           className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 relative"
           title="删除线"
         >
@@ -94,7 +93,7 @@ const FormatToolbar = () => {
           </span>
         </button>
         <button
-          onClick={() => Transforms.insertText(editor, '§r')}
+          onClick={() => Transforms.insertText(editor, '&r')}
           className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
           title="重置样式"
         >
@@ -104,7 +103,7 @@ const FormatToolbar = () => {
           </svg>
         </button>
         <button
-          onClick={() => Transforms.insertText(editor, '§n')}
+          onClick={() => Transforms.insertText(editor, '&n')}
           className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 underline"
           title="下划线"
         >
@@ -125,21 +124,67 @@ const FormatToolbar = () => {
   );
 };
 
+interface MOTDEditorProps {
+  initialValue?: Descendant[];
+  onChange?: (value: Descendant[], plainText: string) => void;
+}
+
+// 修改 serializeToString 函数以更安全地处理内容
+const serializeToString = (nodes: Descendant[]) => {
+  if (!nodes || nodes.length === 0) return '';
+  return nodes.map(n => Node.string(n)).join('\n');
+};
+
 export default function MOTDEditor({
   initialValue = [{ type: 'paragraph', children: [{ text: '' }] }],
   onChange
-}) {
+}: MOTDEditorProps) {
   const [editor] = useState(() => withReact(createEditor()));
 
+  // 确保编辑器有一个有效的初始状态
+  React.useEffect(() => {
+    // 只在初始渲染时触发一次 onChange
+    if (onChange) {
+      const plainText = serializeToString(initialValue);
+      onChange(initialValue, plainText);
+    }
+  }, []);
+
   return (
-    <Slate editor={editor} initialValue={initialValue as CustomElement[]}>
+    <Slate 
+      editor={editor} 
+      initialValue={initialValue as CustomElement[]}
+      onChange={value => {
+        if (onChange) {
+          const plainText = serializeToString(value);
+          onChange(value as Descendant[], plainText);
+        }
+      }}
+    >
       <FormatToolbar />
       <Editable
         className="min-h-[200px] p-4 border rounded bg-gray-100"
         placeholder="输入MOTD内容..."
+        onKeyDown={(event) => {
+          const selection = window.getSelection();
+          if (selection && selection.anchorNode) {
+            const textContent = selection.anchorNode.textContent || '';
+            
+            // 检查当前行是否已达到59个字符
+            if (textContent.length >= 59 && event.key !== 'Backspace' && event.key !== 'Delete' && event.key !== 'ArrowLeft' && event.key !== 'ArrowRight' && event.key !== 'ArrowUp' && event.key !== 'ArrowDown') {
+              if (event.key === 'Enter') {
+                // 允许回车键创建新行
+                return;
+              }
+              // 阻止输入更多字符
+              event.preventDefault();
+            }
+          }
+        }}
         onChange={() => {
           if (onChange) {
-            onChange(editor.children);
+            const plainText = serializeToString(editor.children);
+            onChange(editor.children, plainText);
           }
         }}
       />
