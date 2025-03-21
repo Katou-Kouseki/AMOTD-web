@@ -14,6 +14,8 @@ export default function Home() {
   const [uploadingIcon, setUploadingIcon] = useState(false);
   const [iconPath, setIconPath] = useState<string | null>(null);
   const [motdUrl, setMotdUrl] = useState<string | null>(null);
+  const [isMinimessage, setIsMinimessage] = useState(false);
+  const [motdContent, setMotdContent] = useState<Descendant[]>([]);
 
   const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -105,86 +107,52 @@ export default function Home() {
   };
 
   // 更新parseFormattedText函数支持多种格式
-  const parseFormattedText = (text: string): Array<Array<{text: string, color: string, isBold?: boolean, isItalic?: boolean, isUnderlined?: boolean, isStrikethrough?: boolean}>> => {
+  const parseFormattedText = (text: string) => {
     if (!text) return [[{ text: '', color: '#AAAAAA' }]];
     
+    // 按行分割文本
     const lines = text.split('\n').slice(0, 2);
-    const allLineSegments: Array<Array<{text: string, color: string, isBold?: boolean, isItalic?: boolean, isUnderlined?: boolean, isStrikethrough?: boolean}>> = [];
+    const allLineSegments: Array<Array<{text: string, color: string}>> = [];
     
     for (const line of lines) {
-      const segments: Array<{text: string, color: string, isBold?: boolean, isItalic?: boolean, isUnderlined?: boolean, isStrikethrough?: boolean}> = [];
+      const segments: Array<{text: string, color: string}> = [];
       let currentColor = '#AAAAAA';
       let currentText = '';
-      let isBold = false;
-      let isItalic = false;
-      let isUnderlined = false;
-      let isStrikethrough = false;
-      
       let i = 0;
-      let charCount = 0;
-      const maxCharsPerLine = 46;
       
-      while (i < line.length && charCount < maxCharsPerLine) {
+      while (i < line.length) {
         if ((line[i] === '&' || line[i] === '§') && i + 1 < line.length) {
-          // 添加当前文本段落
+          // 如果有文本累积，先添加到段落中
           if (currentText) {
-            segments.push({ 
-              text: currentText, 
-              color: currentColor,
-              isBold,
-              isItalic,
-              isUnderlined,
-              isStrikethrough 
-            });
+            segments.push({ text: currentText, color: currentColor });
             currentText = '';
           }
           
-          const code = line[i + 1];
+          // 获取颜色代码
+          const colorCode = line[i + 1];
+          const colorObj = MC_COLORS.find(c => c.code === colorCode);
           
-          // 处理颜色
-          const colorObj = MC_COLORS.find(c => c.code === code);
           if (colorObj) {
             currentColor = colorObj.color;
           }
           
-          // 处理格式
-          switch(code) {
-            case 'l': isBold = true; break;
-            case 'o': isItalic = true; break;
-            case 'n': isUnderlined = true; break;
-            case 'm': isStrikethrough = true; break;
-            case 'r': // 重置所有样式
-              isBold = false;
-              isItalic = false;
-              isUnderlined = false;
-              isStrikethrough = false;
-              currentColor = '#AAAAAA';
-              break;
-          }
-          
+          // 跳过颜色代码字符
           i += 2;
         } else {
           currentText += line[i];
           i++;
-          charCount++;
         }
       }
       
-      // 添加最后一个文本段落
+      // 添加最后一段文本
       if (currentText) {
-        segments.push({ 
-          text: currentText, 
-          color: currentColor,
-          isBold,
-          isItalic,
-          isUnderlined,
-          isStrikethrough 
-        });
+        segments.push({ text: currentText, color: currentColor });
       }
       
       allLineSegments.push(segments);
     }
     
+    console.log("解析结果:", allLineSegments);
     return allLineSegments;
   };
 
@@ -193,6 +161,99 @@ export default function Home() {
     // 设置一个自定义属性名
     const style = { '--mc-color': color } as React.CSSProperties;
     return style;
+  };
+
+  // 添加MiniMessage解析函数
+  const parseMinimessageText = (text: string) => {
+    if (!text) return [{ text: '', color: '#AAAAAA' }];
+    
+    const segments = [];
+    let currentColor = '#AAAAAA';
+    let currentText = '';
+    let isBold = false;
+    let isItalic = false;
+    let isUnderlined = false;
+    let isStrikethrough = false;
+    let i = 0;
+    
+    while (i < text.length) {
+      if (text[i] === '<') {
+        // 寻找标签结束位置
+        const tagEnd = text.indexOf('>', i);
+        if (tagEnd === -1) {
+          // 没找到结束标签，添加当前字符并继续
+          currentText += text[i];
+          i++;
+          continue;
+        }
+        
+        // 提取标签内容
+        const tag = text.substring(i + 1, tagEnd);
+        
+        // 先添加当前累积的文本
+        if (currentText) {
+          segments.push({
+            text: currentText,
+            color: currentColor,
+            isBold,
+            isItalic,
+            isUnderlined,
+            isStrikethrough
+          });
+          currentText = '';
+        }
+        
+        // 处理各种标签
+        if (tag.startsWith('color:')) {
+          // 处理颜色标签 <color:#FF0000>
+          currentColor = tag.substring(6);
+        } else if (tag === 'bold') {
+          isBold = true;
+        } else if (tag === '/bold') {
+          isBold = false;
+        } else if (tag === 'italic') {
+          isItalic = true;
+        } else if (tag === '/italic') {
+          isItalic = false;
+        } else if (tag === 'underlined') {
+          isUnderlined = true;
+        } else if (tag === '/underlined') {
+          isUnderlined = false;
+        } else if (tag === 'strikethrough') {
+          isStrikethrough = true;
+        } else if (tag === '/strikethrough') {
+          isStrikethrough = false;
+        } else if (tag === 'reset') {
+          // 重置所有样式
+          currentColor = '#AAAAAA';
+          isBold = false;
+          isItalic = false;
+          isUnderlined = false;
+          isStrikethrough = false;
+        }
+        
+        // 跳过整个标签
+        i = tagEnd + 1;
+      } else {
+        currentText += text[i];
+        i++;
+      }
+    }
+    
+    // 添加最后一段文本
+    if (currentText) {
+      segments.push({
+        text: currentText,
+        color: currentColor,
+        isBold,
+        isItalic,
+        isUnderlined,
+        isStrikethrough
+      });
+    }
+    
+    console.log("解析结果:", segments);
+    return segments;
   };
 
   return (
@@ -246,8 +307,12 @@ export default function Home() {
           <h2 className="text-2xl mb-4">编辑器</h2>
           <MOTDEditor
             initialValue={initialValue}
+            isMinimessage={isMinimessage}
+            onFormatChange={setIsMinimessage}
             onChange={(value: Descendant[], plainText: string) => {
+              setMotdContent(value);
               setMotdText(plainText);
+              console.log("编辑器内容更新:", plainText);
             }}
           />
           <button 
@@ -289,28 +354,41 @@ export default function Home() {
               <div style={{ width: 'calc(100% - 80px)' }}>
                 <div className="text-white text-base font-normal mb-1">Minecraft Server</div>
                 <div className="w-full bg-transparent border-transparent text-[#AAAAAA] font-minecraft focus:outline-none placeholder-gray-400 cursor-text select-text" style={{ minHeight: '2.2em', maxHeight: '2.2em' }}>
-                  {motdText ? 
-                    parseFormattedText(motdText).map((lineSegments, lineIndex) => (
-                      <div key={lineIndex} className="line-clamp-1 leading-tight">
-                        {lineSegments.map((segment, segmentIndex) => (
-                          <span 
-                            key={`${lineIndex}-${segmentIndex}`} 
-                            style={getColorClass(segment.color)} 
-                            className={`
-                              text-[color:var(--mc-color)]
-                              ${segment.isBold ? 'font-bold' : ''}
-                              ${segment.isItalic ? 'italic' : ''}
-                              ${segment.isUnderlined ? 'underline' : ''}
-                              ${segment.isStrikethrough ? 'line-through' : ''}
-                            `}
-                          >
-                            {segment.text}
-                          </span>
-                        ))}
-                      </div>
-                    )) : 
-                    <div className="text-gray-400">请在编辑器中输入文本</div>
-                  }
+                  {motdText ? (
+                    isMinimessage ? (
+                      // MiniMessage格式渲染
+                      parseMinimessageText(motdText).map((segment, index) => (
+                        <span 
+                          key={index} 
+                          style={{ color: segment.color }}
+                          className={`
+                            ${segment.isBold ? 'font-bold' : ''}
+                            ${segment.isItalic ? 'italic' : ''}
+                            ${segment.isUnderlined ? 'underline' : ''}
+                            ${segment.isStrikethrough ? 'line-through' : ''}
+                          `}
+                        >
+                          {segment.text}
+                        </span>
+                      ))
+                    ) : (
+                      // Minecraft格式渲染
+                      parseFormattedText(motdText).map((lineSegments, lineIndex) => (
+                        <div key={lineIndex} className="line-clamp-1 leading-tight">
+                          {lineSegments.map((segment, segmentIndex) => (
+                            <span 
+                              key={`${lineIndex}-${segmentIndex}`} 
+                              style={{ color: segment.color }}
+                            >
+                              {segment.text}
+                            </span>
+                          ))}
+                        </div>
+                      ))
+                    )
+                  ) : (
+                    <span className="text-gray-400">请在编辑器中输入文本</span>
+                  )}
                 </div>
                 <div className="absolute right-4 top-4 flex items-center text-sm">
                   <span className="w-2 h-2 bg-green-500 rounded-full mr-2" />
@@ -326,6 +404,12 @@ export default function Home() {
             className="hidden"
             id="icon-upload"
           />
+          <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
+            <div>调试信息:</div>
+            <div>当前格式: {isMinimessage ? "MiniMessage" : "Minecraft"}</div>
+            <div>文本内容: {motdText || "(空)"}</div>
+            <div>内容长度: {motdText?.length || 0}</div>
+          </div>
           {motdUrl && (
             <div className="mt-4 p-2 bg-gray-100 rounded-md break-all">
               <span className="text-gray-500">MOTD URL:</span>
