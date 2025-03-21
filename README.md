@@ -76,6 +76,8 @@ amotd-web/
   - components/            # 组件
 
     - MOTDEditor.tsx       # MOTD编辑器组件
+    
+    - ColorPicker.tsx      # 颜色选择器组件
 
   - services/              # 服务
 
