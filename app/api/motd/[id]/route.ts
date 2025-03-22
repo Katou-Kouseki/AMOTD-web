@@ -29,7 +29,6 @@ export async function GET(
     const filePath = path.join(process.cwd(), 'public', 'motds', `${id}.json`);
     if (!existsSync(filePath)) {
       return NextResponse.json({
-        success: false,
         error: '未找到MOTD数据'
       }, { status: 404 });
     }
@@ -40,13 +39,13 @@ export async function GET(
     // 检查是否过期
     if (motdData.expiresAt && motdData.expiresAt < Date.now()) {
       return NextResponse.json({
-        success: false,
         error: 'MOTD数据已过期'
       }, { status: 410 });
     }
     
     return NextResponse.json({
       icon: motdData.icon || "",
+      type: motdData.type || "minecraft",
       line1: motdData.line1 || "",
       line2: motdData.line2 || ""
     });

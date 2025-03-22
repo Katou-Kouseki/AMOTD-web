@@ -108,7 +108,8 @@ export default function Home() {
         body: JSON.stringify({
           icon: serverIcon || '',
           line1,
-          line2
+          line2,
+          type: isMinimessage ? "minimessage" : "minecraft"
         })
       });
       
@@ -548,7 +549,7 @@ export default function Home() {
       </div>
       <footer className="mt-16 pt-8 border-t border-gray-200 text-center text-gray-500 text-sm">
         <div className="mb-2">
-          Minecraft MOTD 生成器 v0.2.0
+          Minecraft MOTD 生成器 v0.2.1
         </div>
         <div className="flex items-center justify-center space-x-4">
           <a 

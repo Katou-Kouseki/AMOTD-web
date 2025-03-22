@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     
     // 处理请求数据
     const data = await request.json();
-    const { line1, line2, icon } = data;
+    const { line1, line2, icon, type } = data;
     
     if (!line1 && !line2) {
       return NextResponse.json({
@@ -108,9 +108,10 @@ export async function POST(request: NextRequest) {
       await mkdir(dataDir, { recursive: true });
     }
     
-    // 存储数据 - 不再存储content字段
+    // 存储数据 - 添加type字段
     const motdData = {
       icon: icon || "",
+      type: type || "minecraft", // 默认为minecraft格式
       line1: line1 || '',
       line2: line2 || '',
       createdAt: Date.now(),
@@ -122,8 +123,10 @@ export async function POST(request: NextRequest) {
       JSON.stringify(motdData)
     );
     
+    // 返回的JSON中添加type字段，放在icon后面
     return NextResponse.json({
       icon: motdData.icon,
+      type: motdData.type,
       line1: motdData.line1,
       line2: motdData.line2,
       id,
