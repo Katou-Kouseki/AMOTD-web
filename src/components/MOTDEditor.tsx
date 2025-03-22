@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createEditor, Descendant, Editor, Node, Transforms } from 'slate';
 import { Slate, Editable, withReact, useSlate } from 'slate-react';
 import ColorPicker from './ColorPicker';
@@ -276,13 +276,13 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
                 { name: '深灰色', color: '#555555', code: 'dark_gray' },
                 { name: '黑色', color: '#000000', code: 'black' }
               ].map((color) => (
-    <button
+                <button
                   key={color.code}
                   className="flex flex-col items-center p-2 rounded border hover:bg-gray-100 transition-colors"
                   onClick={() => Transforms.insertText(editor, `<color:${color.code}>`)}
                   title={color.name}
-    >
-      <div 
+                >
+                  <div 
                     className="w-8 h-8 rounded border"
                     style={{ backgroundColor: color.color }}
                   ></div>

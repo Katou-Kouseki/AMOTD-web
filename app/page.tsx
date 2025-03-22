@@ -1,7 +1,7 @@
 'use client';
 import Image from "next/image";
 import { useState, useEffect } from 'react';
-import MOTDEditor, { CustomElement, MC_COLORS } from '@/components/MOTDEditor';
+import MOTDEditor from '../src/components/MOTDEditor';
 import { Descendant } from 'slate';
 
 export default function Home() {
