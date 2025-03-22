@@ -348,7 +348,7 @@ export default function Home() {
         <div>
           <h2 className="text-2xl mb-4">编辑器</h2>
           <MOTDEditor
-            initialValue={[{ type: 'paragraph', children: [{ text: initialText || '' }] }]}
+            initialValue={[{ type: 'paragraph', children: [{ text: '' }] }]}
             onChange={handleEditorChange}
             isMinimessage={isMinimessage}
             onFormatChange={(value) => setIsMinimessage(value)}
