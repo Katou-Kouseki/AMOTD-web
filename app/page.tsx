@@ -66,10 +66,10 @@ export default function Home() {
           const result = await response.json();
           
           if (result.success) {
-            // 保存图片路径
-            setIconPath(result.filepath);
+            // 保存完整URL路径而不是相对路径
+            setIconPath(result.fileUrl);
             // 设置预览
-        setServerIcon(canvas.toDataURL('image/png'));
+            setServerIcon(canvas.toDataURL('image/png'));
           }
           
           setUploadingIcon(false);
@@ -106,7 +106,7 @@ export default function Home() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          icon: serverIcon || '',
+          icon: iconPath || '',
           line1,
           line2,
           type: isMinimessage ? "minimessage" : "minecraft"

@@ -16,10 +16,10 @@ export async function POST(request: NextRequest) {
     const filepath = await saveIcon(buffer)
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || ''
 
-    return NextResponse.json({ 
-      success: true, 
-      filepath,
-      absolutePath: `${baseUrl}${filepath}`
+    return NextResponse.json({
+      success: true,
+      filepath: `/uploads/${filepath.split('/').pop()}`,
+      fileUrl: `${request.headers.get('origin') || request.nextUrl.origin}/uploads/${filepath.split('/').pop()}`
     })
   } catch (error) {
     console.error('上传错误:', error)

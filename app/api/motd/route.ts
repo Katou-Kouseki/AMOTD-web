@@ -108,10 +108,10 @@ export async function POST(request: NextRequest) {
       await mkdir(dataDir, { recursive: true });
     }
     
-    // 存储数据 - 添加type字段
+    // 存储数据 - 确保icon是完整URL
     const motdData = {
-      icon: icon || "",
-      type: type || "minecraft", // 默认为minecraft格式
+      icon: icon || "", // 已经是完整URL，如"https://example.com/uploads/12345.png"
+      type: type || "minecraft",
       line1: line1 || '',
       line2: line2 || '',
       createdAt: Date.now(),
