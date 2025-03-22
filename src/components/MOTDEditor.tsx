@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createEditor, Descendant, Node, Transforms, BaseEditor } from 'slate';
 import { Slate, Editable, withReact, useSlate, ReactEditor } from 'slate-react';
 import ColorPicker from './ColorPicker';
@@ -64,26 +64,27 @@ export default function MOTDEditor({
   onFormatChange
 }: MOTDEditorProps) {
   const [editor] = useState(() => withReact(createEditor()));
+  // 添加ref来跟踪上次的文本内容
+  const lastTextRef = useRef(serializeToString(initialValue));
 
-  // 添加初始化效果
+  // 初始化effect
   useEffect(() => {
-    // 初始化时触发onChange
-    if (onChange && initialValue) {
-      const plainText = serializeToString(initialValue);
-      console.log("初始化文本:", plainText);
-      onChange(initialValue, plainText);
-    }
-  }, [initialValue, onChange, serializeToString]); // 添加所有依赖项
+    // 只运行一次的初始化逻辑
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <Slate 
       editor={editor} 
       initialValue={initialValue as CustomElement[]}
       onChange={(value) => {
-        if (onChange) {
-          const plainText = serializeToString(value);
-          console.log("编辑器内容变更:", plainText); // 应该在控制台看到这个
-          onChange(value as Descendant[], plainText);
+        // 确保只有当内容真正变化时才调用onChange
+        const newText = serializeToString(value);
+        if (newText !== lastTextRef.current) { // 使用ref而不是state
+          lastTextRef.current = newText;
+          if (onChange) {
+            onChange(value as Descendant[], newText);
+          }
         }
       }}
     >

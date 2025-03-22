@@ -1,6 +1,6 @@
 'use client';
 import Image from "next/image";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import MOTDEditor, { MC_COLORS } from '../src/components/MOTDEditor';
 import { Descendant } from 'slate';
 
@@ -292,6 +292,12 @@ export default function Home() {
     return formattedText;
   };
 
+  // 1. 使用useCallback包装onChange处理函数
+  const handleEditorChange = useCallback((value: Descendant[], plainText: string) => {
+    setMotdText(plainText);
+    // 其他可能导致循环的逻辑...
+  }, []); // 不要在依赖项中包含motdText等状态变量
+
   return (
     <main className="container mx-auto p-8 relative">
       {/* 社交媒体图标 */}
@@ -342,14 +348,10 @@ export default function Home() {
         <div>
           <h2 className="text-2xl mb-4">编辑器</h2>
           <MOTDEditor
-            initialValue={initialValue}
+            initialValue={[{ type: 'paragraph', children: [{ text: initialText || '' }] }]}
+            onChange={handleEditorChange}
             isMinimessage={isMinimessage}
-            onFormatChange={setIsMinimessage}
-            onChange={(value: Descendant[], plainText: string) => {
-              setMotdContent(value);
-              setMotdText(plainText);
-              console.log("编辑器内容更新:", plainText);
-            }}
+            onFormatChange={(value) => setIsMinimessage(value)}
           />
           <button 
             onClick={generateStyleCode}
