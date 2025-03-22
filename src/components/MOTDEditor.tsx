@@ -1,36 +1,39 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { createEditor, Descendant, Editor, Node, Transforms } from 'slate';
-import { Slate, Editable, withReact, useSlate } from 'slate-react';
+import { createEditor, Descendant, Editor, Node, Transforms, BaseEditor } from 'slate';
+import { Slate, Editable, withReact, useSlate, ReactEditor } from 'slate-react';
 import ColorPicker from './ColorPicker';
 
 export type CustomElement = { type: 'paragraph'; children: CustomText[] };
 export type CustomText = { text: string; color?: string };
 
+// 在导入语句下方添加类型声明
+type CustomEditor = BaseEditor & ReactEditor;
+
 declare module 'slate' {
   interface CustomTypes {
-    Editor: BaseEditor & { type: 'paragraph' };
+    Editor: CustomEditor;
     Element: CustomElement;
     Text: CustomText;
   }
 }
 
 export const MC_COLORS = [
-  { code: '0', name: '黑', color: '#000000' },
-  { code: '1', name: '深蓝', color: '#0000AA' },
-  { code: '2', name: '绿', color: '#00AA00' },
-  { code: '3', name: '天蓝', color: '#00AAAA' },
-  { code: '4', name: '大红', color: '#AA0000' },
-  { code: '5', name: '品红', color: '#AA00AA' },
-  { code: '6', name: '土黄', color: '#FFAA00' },
-  { code: '7', name: '灰', color: '#AAAAAA' },
-  { code: '8', name: '深灰', color: '#555555' },
-  { code: '9', name: '蓝紫', color: '#5555FF' },
-  { code: 'a', name: '浅绿', color: '#55FF55' },
-  { code: 'b', name: '蓝绿', color: '#55FFFF' },
-  { code: 'c', name: '浅红', color: '#FF5555' },
-  { code: 'd', name: '粉红', color: '#FF55FF' },
-  { code: 'e', name: '金黄', color: '#FFFF55' },
-  { code: 'f', name: '白', color: '#FFFFFF' }
+  { code: '0', name: '黑色', color: '#000000' },
+  { code: '1', name: '深蓝色', color: '#0000AA' },
+  { code: '2', name: '深绿色', color: '#00AA00' },
+  { code: '3', name: '深青色', color: '#00AAAA' },
+  { code: '4', name: '深红色', color: '#AA0000' },
+  { code: '5', name: '紫色', color: '#AA00AA' },
+  { code: '6', name: '金色', color: '#FFAA00' },
+  { code: '7', name: '灰色', color: '#AAAAAA' },
+  { code: '8', name: '深灰色', color: '#555555' },
+  { code: '9', name: '蓝色', color: '#5555FF' },
+  { code: 'a', name: '绿色', color: '#55FF55' },
+  { code: 'b', name: '青色', color: '#55FFFF' },
+  { code: 'c', name: '红色', color: '#FF5555' },
+  { code: 'd', name: '粉色', color: '#FF55FF' },
+  { code: 'e', name: '黄色', color: '#FFFF55' },
+  { code: 'f', name: '白色', color: '#FFFFFF' }
 ].sort((a, b) => a.code.localeCompare(b.code));
 
 // 为组件的props添加类型定义
