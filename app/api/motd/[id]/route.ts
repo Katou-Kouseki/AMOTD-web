@@ -8,10 +8,20 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    // 检查params是否存在
+    if (!params || typeof params !== 'object') {
+      console.error('params不是有效对象:', params);
+      return NextResponse.json({
+        error: '无效的请求参数'
+      }, { status: 400 });
+    }
+
+    // 安全地访问id
     const id = params.id;
+    console.log('获取到的ID:', id); // 添加调试信息
+    
     if (!id || id.length !== 8) {
       return NextResponse.json({
-        success: false,
         error: '无效的MOTD ID'
       }, { status: 400 });
     }
@@ -44,7 +54,6 @@ export async function GET(
   } catch (error) {
     console.error('获取MOTD数据出错:', error);
     return NextResponse.json({
-      success: false,
       error: '服务器内部错误'
     }, { status: 500 });
   }
