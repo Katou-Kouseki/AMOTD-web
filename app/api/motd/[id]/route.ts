@@ -1,33 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getMOTD } from '@/services/motd';
+import { readFile } from 'fs/promises';
+import { existsSync } from 'fs';
+import path from 'path';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-): Promise<NextResponse> {
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = await params;
-    const motdData = await getMOTD(id);
-    
-    if (!motdData) {
-      return NextResponse.json({ error: '找不到MOTD数据' }, { status: 404 });
+    const id = params.id;
+    if (!id || id.length !== 8) {
+      return NextResponse.json({
+        success: false,
+        error: '无效的MOTD ID'
+      }, { status: 400 });
     }
     
-    // 获取当前请求的主机和协议信息
-    const host = request.headers.get('host') || '';
-    const protocol = request.headers.get('x-forwarded-proto') || 'http';
-    const baseUrl = `${protocol}://${host}`;
-    
-    // 确保icon路径是完整的绝对路径
-    if (motdData.icon && !motdData.icon.startsWith('http')) {
-      motdData.icon = motdData.icon.startsWith('/') 
-        ? `${baseUrl}${motdData.icon}` 
-        : `${baseUrl}/${motdData.icon}`;
+    const filePath = path.join(process.cwd(), 'public', 'motds', `${id}.json`);
+    if (!existsSync(filePath)) {
+      return NextResponse.json({
+        success: false,
+        error: '未找到MOTD数据'
+      }, { status: 404 });
     }
     
-    return NextResponse.json(motdData);
+    const fileContent = await readFile(filePath, 'utf8');
+    const motdData = JSON.parse(fileContent);
+    
+    // 检查是否过期
+    if (motdData.expiresAt && motdData.expiresAt < Date.now()) {
+      return NextResponse.json({
+        success: false,
+        error: 'MOTD数据已过期'
+      }, { status: 410 });
+    }
+    
+    return NextResponse.json({
+      icon: motdData.icon || "",
+      line1: motdData.line1 || "",
+      line2: motdData.line2 || ""
+    });
+    
   } catch (error) {
-    console.error('获取MOTD错误:', error);
-    return NextResponse.json({ error: '获取MOTD失败' }, { status: 500 });
+    console.error('获取MOTD数据出错:', error);
+    return NextResponse.json({
+      success: false,
+      error: '服务器内部错误'
+    }, { status: 500 });
   }
 } 

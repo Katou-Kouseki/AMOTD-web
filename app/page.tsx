@@ -1,6 +1,6 @@
 'use client';
 import Image from "next/image";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MOTDEditor, { CustomElement, MC_COLORS } from '@/components/MOTDEditor';
 import { Descendant } from 'slate';
 
@@ -13,9 +13,18 @@ export default function Home() {
   const [motdText, setMotdText] = useState<string>('');
   const [uploadingIcon, setUploadingIcon] = useState(false);
   const [iconPath, setIconPath] = useState<string | null>(null);
+  const [motdUrls, setMotdUrls] = useState<Array<{
+    url: string,
+    id: string,
+    expiresAt: number,
+    countdown: string
+  }>>([]);
   const [motdUrl, setMotdUrl] = useState<string | null>(null);
   const [isMinimessage, setIsMinimessage] = useState(false);
   const [motdContent, setMotdContent] = useState<Descendant[]>([]);
+  const [expireTime, setExpireTime] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState<string | null>(null);
+  const [rateLimitError, setRateLimitError] = useState<string | null>(null);
 
   const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -84,27 +93,88 @@ export default function Home() {
 
   const generateStyleCode = async () => {
     try {
+      setRateLimitError(null);
+      
+      // 将编辑器文本分割成最多两行
+      const lines = motdText.split('\n').slice(0, 2);
+      const line1 = lines[0] || '';
+      const line2 = lines.length > 1 ? lines[1] : '';
+      
       const response = await fetch('/api/motd', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          icon: iconPath || '',
-          content: motdText
+          icon: serverIcon || '',
+          line1,
+          line2
         })
       });
       
-      const result = await response.json();
-      
-      if (result.success) {
-        const baseUrl = window.location.origin;
-        setMotdUrl(`${baseUrl}${result.url}`);
+      // 检查HTTP状态码
+      if (response.status === 429) {
+        const errorData = await response.json();
+        setRateLimitError(errorData.error);
+        return;
       }
+      
+      if (!response.ok) {
+        console.error('生成样式码失败:', response.status);
+        return;
+      }
+      
+      const result = await response.json();
+      console.log('API响应:', result);
+      
+      const baseUrl = window.location.origin;
+      const newUrl = `${baseUrl}/api/motd/${result.id}`;
+      setMotdUrl(newUrl);
+      
+      // 如果使用motdUrls数组存储多个样式码
+      if (result.expiresAt) {
+        const newStyleCode = {
+          url: newUrl,
+          id: result.id,
+          expiresAt: result.expiresAt,
+          countdown: formatCountdown(result.expiresAt - Date.now())
+        };
+        
+        setMotdUrls(prev => [...prev, newStyleCode]);
+      }
+      
     } catch (error) {
       console.error('生成样式码错误:', error);
     }
   };
+
+  // 添加格式化倒计时的辅助函数
+  const formatCountdown = (difference: number) => {
+    if (difference <= 0) return '已过期';
+    
+    const hours = Math.floor(difference / (1000 * 60 * 60));
+    const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+    
+    return `${hours}小时 ${minutes}分钟 ${seconds}秒`;
+  };
+
+  // 使用Effect来定期更新所有样式码的倒计时
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = Date.now();
+      setMotdUrls(prevUrls => 
+        prevUrls
+          .map(item => ({
+            ...item,
+            countdown: formatCountdown(item.expiresAt - now)
+          }))
+          .filter(item => item.expiresAt > now) // 自动过滤掉过期的样式码
+      );
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, []);
 
   // 更新parseFormattedText函数支持多种格式
   const parseFormattedText = (text: string) => {
@@ -404,47 +474,74 @@ export default function Home() {
             <div>文本内容: {motdText || "(空)"}</div>
             <div>内容长度: {motdText?.length || 0}</div>
           </div>
-          {motdUrl && (
-            <div className="mt-4 p-2 bg-gray-100 rounded-md break-all">
-              <div className="mb-2 flex items-center">
-                <span className="text-gray-500">样式码:</span>
-                <span className="ml-2 font-mono text-sm overflow-x-auto whitespace-pre-wrap">
-                  {/* 提取并显示URL中的ID部分 */}
-                  {motdUrl.split('/').pop()}
-                </span>
+          {/* 样式码显示区域 */}
+          {motdUrls.length > 0 && (
+            <div className="mt-4 border rounded-md overflow-hidden">
+              <div className="bg-gray-100 p-2 border-b font-medium text-sm flex justify-between items-center">
+                <div>生成的样式码 ({motdUrls.length})</div>
                 <button
-                  onClick={() => {
-                    const styleCode = motdUrl.split('/').pop() || '';
-                    navigator.clipboard.writeText(styleCode)
-                      .then(() => {
-                        // 可以添加复制成功的提示，比如改变按钮文字
-                        const btn = document.getElementById('copy-btn');
-                        if (btn) {
-                          const originalText = btn.innerText;
-                          btn.innerText = '已复制';
-                          btn.classList.add('bg-green-500');
-                          btn.classList.remove('bg-gray-200');
-                          setTimeout(() => {
-                            btn.innerText = originalText;
-                            btn.classList.remove('bg-green-500');
-                            btn.classList.add('bg-gray-200');
-                          }, 2000);
-                        }
-                      })
-                      .catch(err => console.error('复制失败:', err));
-                  }}
-                  id="copy-btn"
-                  className="ml-2 px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded text-xs transition-colors"
+                  onClick={() => setMotdUrls([])}
+                  className="px-2 py-0.5 bg-red-100 hover:bg-red-200 text-red-700 text-xs rounded transition-colors"
                 >
-                  复制
+                  清空全部
                 </button>
               </div>
-              <div>
-                <span className="text-gray-500">MOTD URL:</span>
-                <a href={motdUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-500 hover:underline">
-                  {motdUrl}
-                </a>
+              <div className="max-h-48 overflow-y-auto">
+                {motdUrls.map((item, index) => (
+                  <div key={item.id} className="p-2 border-b last:border-b-0 hover:bg-gray-50">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center">
+                        <span className="text-gray-500 text-sm">样式码:</span>
+                        <span className="ml-2 font-mono text-sm">{item.id}</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(item.id)
+                              .then(() => {
+                                const btn = document.getElementById(`copy-btn-${index}`);
+                                if (btn) {
+                                  const originalText = btn.innerText;
+                                  btn.innerText = '已复制';
+                                  btn.classList.add('bg-green-500');
+                                  btn.classList.remove('bg-gray-200');
+                                  setTimeout(() => {
+                                    btn.innerText = originalText;
+                                    btn.classList.remove('bg-green-500');
+                                    btn.classList.add('bg-gray-200');
+                                  }, 2000);
+                                }
+                              })
+                              .catch(err => console.error('复制失败:', err));
+                          }}
+                          id={`copy-btn-${index}`}
+                          className="ml-2 px-2 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs transition-colors"
+                        >
+                          复制
+                        </button>
+                      </div>
+                      <span className={`text-xs ${item.countdown === '已过期' ? 'text-red-500' : 'text-orange-500'}`}>
+                        {item.countdown}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-600 truncate">
+                      <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                        {item.url}
+                      </a>
+                    </div>
+                  </div>
+                ))}
               </div>
+            </div>
+          )}
+          {/* 当没有样式码时显示提示 */}
+          {motdUrls.length === 0 && (
+            <div className="mt-4 p-4 bg-gray-100 rounded-md text-center text-gray-500">
+              点击"生成样式码"按钮创建MOTD样式码
+            </div>
+          )}
+          {/* 显示速率限制错误 */}
+          {rateLimitError && (
+            <div className="mt-4 p-2 bg-red-100 rounded-md text-red-700 text-sm">
+              {rateLimitError}
             </div>
           )}
         </div>
