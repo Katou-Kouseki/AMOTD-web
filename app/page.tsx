@@ -163,97 +163,65 @@ export default function Home() {
     return style;
   };
 
-  // 添加MiniMessage解析函数
+  // 修改parseMinimessageText函数以支持所有MiniMessage颜色和渐变色格式
   const parseMinimessageText = (text: string) => {
-    if (!text) return [{ text: '', color: '#AAAAAA' }];
+    if (!text) return '';
     
-    const segments = [];
-    let currentColor = '#AAAAAA';
-    let currentText = '';
-    let isBold = false;
-    let isItalic = false;
-    let isUnderlined = false;
-    let isStrikethrough = false;
-    let i = 0;
+    // 添加调试信息
+    console.log("解析MiniMessage格式:", text);
     
-    while (i < text.length) {
-      if (text[i] === '<') {
-        // 寻找标签结束位置
-        const tagEnd = text.indexOf('>', i);
-        if (tagEnd === -1) {
-          // 没找到结束标签，添加当前字符并继续
-          currentText += text[i];
-          i++;
-          continue;
-        }
-        
-        // 提取标签内容
-        const tag = text.substring(i + 1, tagEnd);
-        
-        // 先添加当前累积的文本
-        if (currentText) {
-          segments.push({
-            text: currentText,
-            color: currentColor,
-            isBold,
-            isItalic,
-            isUnderlined,
-            isStrikethrough
-          });
-          currentText = '';
-        }
-        
-        // 处理各种标签
-        if (tag.startsWith('color:')) {
-          // 处理颜色标签 <color:#FF0000>
-          currentColor = tag.substring(6);
-        } else if (tag === 'bold') {
-          isBold = true;
-        } else if (tag === '/bold') {
-          isBold = false;
-        } else if (tag === 'italic') {
-          isItalic = true;
-        } else if (tag === '/italic') {
-          isItalic = false;
-        } else if (tag === 'underlined') {
-          isUnderlined = true;
-        } else if (tag === '/underlined') {
-          isUnderlined = false;
-        } else if (tag === 'strikethrough') {
-          isStrikethrough = true;
-        } else if (tag === '/strikethrough') {
-          isStrikethrough = false;
-        } else if (tag === 'reset') {
-          // 重置所有样式
-          currentColor = '#AAAAAA';
-          isBold = false;
-          isItalic = false;
-          isUnderlined = false;
-          isStrikethrough = false;
-        }
-        
-        // 跳过整个标签
-        i = tagEnd + 1;
-      } else {
-        currentText += text[i];
-        i++;
+    let formattedText = text;
+    
+    // 处理预设颜色，例如<color:red>
+    formattedText = formattedText.replace(/<color:([a-z_]+)>(.*?)(<\/color>|<reset>|$)/g, (match, color, content) => {
+      const colorMap: Record<string, string> = {
+        'black': '#000000',
+        'dark_blue': '#0000AA',
+        'dark_green': '#00AA00',
+        'dark_aqua': '#00AAAA',
+        'dark_red': '#AA0000',
+        'dark_purple': '#AA00AA',
+        'gold': '#FFAA00',
+        'gray': '#AAAAAA',
+        'dark_gray': '#555555',
+        'blue': '#5555FF',
+        'green': '#55FF55',
+        'aqua': '#55FFFF',
+        'red': '#FF5555',
+        'light_purple': '#FF55FF',
+        'yellow': '#FFFF55',
+        'white': '#FFFFFF'
+      };
+      
+      const colorValue = colorMap[color] || '#FFFFFF';
+      return `<span style="color:${colorValue}">${content}</span>`;
+    });
+    
+    // 处理十六进制颜色，例如<color:#FF5555>
+    formattedText = formattedText.replace(/<color:#([0-9A-Fa-f]{6})>(.*?)(<\/color>|<reset>|$)/g, 
+      (match, hexColor, content) => {
+        return `<span style="color:#${hexColor}">${content}</span>`;
       }
-    }
+    );
     
-    // 添加最后一段文本
-    if (currentText) {
-      segments.push({
-        text: currentText,
-        color: currentColor,
-        isBold,
-        isItalic,
-        isUnderlined,
-        isStrikethrough
-      });
-    }
+    // 处理渐变色，例如<gradient:#FF5555:#5555FF>
+    formattedText = formattedText.replace(/<gradient:#([0-9A-Fa-f]{6}):#([0-9A-Fa-f]{6})>(.*?)(<\/gradient>|<reset>|$)/g, 
+      (match, startColor, endColor, content) => {
+        // 简单的CSS模拟渐变效果
+        return `<span style="background: linear-gradient(to right, #${startColor}, #${endColor}); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${content}</span>`;
+      }
+    );
     
-    console.log("解析结果:", segments);
-    return segments;
+    // 处理格式化标签
+    formattedText = formattedText.replace(/<bold>(.*?)(<\/bold>|<reset>|$)/g, '<span style="font-weight:bold">$1</span>');
+    formattedText = formattedText.replace(/<italic>(.*?)(<\/italic>|<reset>|$)/g, '<span style="font-style:italic">$1</span>');
+    formattedText = formattedText.replace(/<underlined>(.*?)(<\/underlined>|<reset>|$)/g, '<span style="text-decoration:underline">$1</span>');
+    formattedText = formattedText.replace(/<strikethrough>(.*?)(<\/strikethrough>|<reset>|$)/g, '<span style="text-decoration:line-through">$1</span>');
+    
+    // 处理重置标签
+    formattedText = formattedText.replace(/<reset>/g, '</span>');
+    
+    return formattedText;
   };
 
   return (
@@ -356,21 +324,8 @@ export default function Home() {
                 <div className="w-full bg-transparent border-transparent text-[#AAAAAA] font-minecraft focus:outline-none placeholder-gray-400 cursor-text select-text" style={{ minHeight: '2.2em', maxHeight: '2.2em' }}>
                   {motdText ? (
                     isMinimessage ? (
-                      // MiniMessage格式渲染
-                      parseMinimessageText(motdText).map((segment, index) => (
-                        <span 
-                          key={index} 
-                          style={{ color: segment.color }}
-                          className={`
-                            ${segment.isBold ? 'font-bold' : ''}
-                            ${segment.isItalic ? 'italic' : ''}
-                            ${segment.isUnderlined ? 'underline' : ''}
-                            ${segment.isStrikethrough ? 'line-through' : ''}
-                          `}
-                        >
-                          {segment.text}
-                        </span>
-                      ))
+                      // MiniMessage格式渲染 - 使用dangerouslySetInnerHTML
+                      <div dangerouslySetInnerHTML={{ __html: parseMinimessageText(motdText) }} />
                     ) : (
                       // Minecraft格式渲染
                       parseFormattedText(motdText).map((lineSegments, lineIndex) => (
@@ -409,6 +364,14 @@ export default function Home() {
             <div>当前格式: {isMinimessage ? "MiniMessage" : "Minecraft"}</div>
             <div>文本内容: {motdText || "(空)"}</div>
             <div>内容长度: {motdText?.length || 0}</div>
+            {isMinimessage && (
+              <div>
+                <div>解析后内容:</div>
+                <pre className="mt-1 p-1 bg-white rounded border overflow-x-auto">
+                  {parseMinimessageText(motdText)}
+                </pre>
+              </div>
+            )}
           </div>
           {motdUrl && (
             <div className="mt-4 p-2 bg-gray-100 rounded-md break-all">

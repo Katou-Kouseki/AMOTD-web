@@ -138,28 +138,281 @@ interface FormatToolbarProps {
   onFormatChange?: (isMinimessage: boolean) => void;
 }
 
-export const FormatToolbar = ({ 
-  isMinimessage = false, 
-  onFormatChange 
-}: FormatToolbarProps) => {
+export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarProps) => {
   const editor = useSlate();
-  
+
+  // Minecraft 格式化代码映射
+  const colorCodes = [
+    { code: '0', name: '黑色', color: '#000000' },
+    { code: '1', name: '深蓝色', color: '#0000AA' },
+    { code: '2', name: '深绿色', color: '#00AA00' },
+    { code: '3', name: '深青色', color: '#00AAAA' },
+    { code: '4', name: '深红色', color: '#AA0000' },
+    { code: '5', name: '紫色', color: '#AA00AA' },
+    { code: '6', name: '金色', color: '#FFAA00' },
+    { code: '7', name: '灰色', color: '#AAAAAA' },
+    { code: '8', name: '深灰色', color: '#555555' },
+    { code: '9', name: '蓝色', color: '#5555FF' },
+    { code: 'a', name: '绿色', color: '#55FF55' },
+    { code: 'b', name: '青色', color: '#55FFFF' },
+    { code: 'c', name: '红色', color: '#FF5555' },
+    { code: 'd', name: '粉色', color: '#FF55FF' },
+    { code: 'e', name: '黄色', color: '#FFFF55' },
+    { code: 'f', name: '白色', color: '#FFFFFF' },
+  ];
+
+  const formatButtons = [
+    { code: 'l', name: '粗体', icon: 'format_bold' },
+    { code: 'o', name: '斜体', icon: 'format_italic' },
+    { code: 'n', name: '下划线', icon: 'format_underlined' },
+    { code: 'm', name: '删除线', icon: 'strikethrough_s' },
+    { code: 'r', name: '重置', icon: 'restart_alt' },
+  ];
+
+  // MiniMessage格式代码
+  const miniMessageFormatButtons = [
+    { code: '<bold>', name: '粗体', icon: 'format_bold' },
+    { code: '<italic>', name: '斜体', icon: 'format_italic' },
+    { code: '<underlined>', name: '下划线', icon: 'format_underlined' },
+    { code: '<strikethrough>', name: '删除线', icon: 'strikethrough_s' },
+    { code: '<reset>', name: '重置', icon: 'restart_alt' },
+  ];
+
+  // 颜色选择器状态
+  const [selectedColor, setSelectedColor] = useState('#AA0000');
+  const [startColor, setStartColor] = useState('#FF5555');
+  const [endColor, setEndColor] = useState('#5555FF');
+
+  // 在FormatToolbar组件内添加状态变量
+  const [gradientExpanded, setGradientExpanded] = useState(false);
+
   return (
-    <div className="flex flex-wrap items-center gap-2 mb-2 p-2 border rounded bg-gray-100">
-      {/* 切换按钮 */}
-      <button
-        onClick={() => onFormatChange && onFormatChange(!isMinimessage)}
-        className={`px-3 py-1 rounded ${isMinimessage ? 'bg-green-500 text-white' : 'bg-gray-200'}`}
-        title={isMinimessage ? "切换到Minecraft格式" : "切换到MiniMessage格式"}
-      >
-        {isMinimessage ? "MiniMessage" : "MC格式"}
-      </button>
-      
-      {/* 根据当前模式渲染不同的工具栏 */}
-      {isMinimessage ? (
-        <MinimessageToolbar editor={editor} />
+    <div className="p-2 bg-gray-200 rounded-t mb-1">
+      {/* 格式选择器 */}
+      <div className="flex justify-between items-center mb-2">
+        <div className="text-sm font-bold">格式工具栏</div>
+        <div className="flex items-center">
+          <span className="mr-2 text-sm">格式:</span>
+          <select 
+            className="border rounded px-2 py-1 text-sm bg-white"
+            value={isMinimessage ? "minimessage" : "minecraft"}
+            onChange={(e) => {
+              if (onFormatChange) {
+                onFormatChange(e.target.value === "minimessage");
+              }
+            }}
+            aria-label="选择格式"
+          >
+            <option value="minecraft">Minecraft格式</option>
+            <option value="minimessage">MiniMessage格式</option>
+          </select>
+        </div>
+      </div>
+
+      {/* 根据当前模式显示不同的格式工具栏 */}
+      {!isMinimessage ? (
+        <>
+          {/* Minecraft 格式 - 颜色选择器 */}
+          <div className="mb-3">
+            <div className="text-xs font-semibold mb-1">颜色:</div>
+            <div className="grid grid-cols-8 gap-2">
+              {colorCodes.map((color) => (
+                <button
+                  key={color.code}
+                  className="flex flex-col items-center p-2 rounded border hover:bg-gray-100 transition-colors"
+                  onClick={() => Transforms.insertText(editor, `&${color.code}`)}
+                  title={color.name}
+                >
+                  <div 
+                    className="w-8 h-8 rounded border"
+                    style={{ backgroundColor: color.color }}
+                  ></div>
+                  <div className="text-xs mt-1 font-mono">&{color.code}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Minecraft 格式 - 格式按钮 */}
+          <div>
+            <div className="text-xs font-semibold mb-1">格式:</div>
+            <div className="flex flex-wrap gap-2">
+              {formatButtons.map((button) => (
+                <button
+                  key={button.code}
+                  className="flex items-center p-2 rounded border hover:bg-gray-100 transition-colors"
+                  onClick={() => Transforms.insertText(editor, `&${button.code}`)}
+                  title={button.name}
+                >
+                  <span className="material-icons mr-1">{button.icon}</span>
+                  <span className="text-sm">{button.name}</span>
+                  <span className="ml-1 text-xs font-mono">&{button.code}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
       ) : (
-        <MCFormatToolbar editor={editor} />
+        <>
+          {/* MiniMessage 格式 - 预设颜色 */}
+          <div className="mb-3">
+            <div className="text-xs font-semibold mb-1">预设颜色:</div>
+            <div className="grid grid-cols-8 gap-2 mb-2">
+              {[
+                { name: '红色', color: '#FF5555', code: 'red' },
+                { name: '深红色', color: '#AA0000', code: 'dark_red' },
+                { name: '金色', color: '#FFAA00', code: 'gold' },
+                { name: '黄色', color: '#FFFF55', code: 'yellow' },
+                { name: '绿色', color: '#55FF55', code: 'green' },
+                { name: '深绿色', color: '#00AA00', code: 'dark_green' },
+                { name: '青色', color: '#55FFFF', code: 'aqua' },
+                { name: '深青色', color: '#00AAAA', code: 'dark_aqua' },
+                { name: '蓝色', color: '#5555FF', code: 'blue' },
+                { name: '深蓝色', color: '#0000AA', code: 'dark_blue' },
+                { name: '粉色', color: '#FF55FF', code: 'light_purple' },
+                { name: '紫色', color: '#AA00AA', code: 'dark_purple' },
+                { name: '白色', color: '#FFFFFF', code: 'white' },
+                { name: '灰色', color: '#AAAAAA', code: 'gray' },
+                { name: '深灰色', color: '#555555', code: 'dark_gray' },
+                { name: '黑色', color: '#000000', code: 'black' }
+              ].map((color) => (
+                <button
+                  key={color.code}
+                  className="flex flex-col items-center p-2 rounded border hover:bg-gray-100 transition-colors"
+                  onClick={() => Transforms.insertText(editor, `<color:${color.code}>`)}
+                  title={color.name}
+                >
+                  <div 
+                    className="w-8 h-8 rounded border"
+                    style={{ backgroundColor: color.color }}
+                  ></div>
+                  <div className="text-xs mt-1 truncate max-w-full">{color.code}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* MiniMessage 格式 - 自定义颜色 */}
+          <div className="mb-3">
+            <div className="text-xs font-semibold mb-1">自定义颜色:</div>
+            <div className="flex items-center gap-2">
+              <ColorPicker 
+                color={selectedColor} 
+                onChange={(color: string) => setSelectedColor(color)} 
+              />
+              <button
+                onClick={() => {
+                  const hexColor = selectedColor.replace('#', '');
+                  Transforms.insertText(editor, `<color:#${hexColor}>`);
+                }}
+                className="px-3 py-2 bg-gray-100 rounded border hover:bg-gray-200"
+                title="应用颜色"
+              >
+                应用颜色 <span className="text-xs font-mono">&lt;color:#{selectedColor.replace('#', '')}&gt;</span>
+              </button>
+            </div>
+          </div>
+
+          {/* MiniMessage 格式 - 渐变色（带折叠功能） */}
+          <div className="mb-3">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-semibold mb-1">渐变色:</div>
+              <button 
+                onClick={() => setGradientExpanded(!gradientExpanded)}
+                className="text-xs text-blue-600 hover:underline flex items-center"
+              >
+                {gradientExpanded ? '收起' : '展开'} 
+                <span className="material-icons text-sm ml-1">
+                  {gradientExpanded ? 'expand_less' : 'expand_more'}
+                </span>
+              </button>
+            </div>
+            
+            {gradientExpanded && (
+              <div className="flex flex-col gap-2 mt-1 p-2 bg-gray-100 rounded border">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center">
+                    <span className="text-xs mr-2">起始颜色:</span>
+                    <ColorPicker 
+                      color={startColor || "#FF5555"} 
+                      onChange={(color: string) => setStartColor(color)} 
+                    />
+                  </div>
+                  <div className="flex items-center ml-4">
+                    <span className="text-xs mr-2">结束颜色:</span>
+                    <ColorPicker 
+                      color={endColor || "#5555FF"} 
+                      onChange={(color: string) => setEndColor(color)} 
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    const startHex = startColor?.replace('#', '') || "FF5555";
+                    const endHex = endColor?.replace('#', '') || "5555FF";
+                    Transforms.insertText(editor, `<gradient:#${startHex}:#${endHex}>`);
+                  }}
+                  className="px-3 py-2 bg-white rounded border hover:bg-gray-50"
+                  title="应用渐变色"
+                >
+                  应用渐变色
+                  <div className="mt-1 w-full h-4 rounded" 
+                       style={{background: `linear-gradient(to right, ${startColor || "#FF5555"}, ${endColor || "#5555FF"})`}}>
+                  </div>
+                </button>
+              </div>
+            )}
+            
+            {!gradientExpanded && (
+              <button
+                onClick={() => setGradientExpanded(true)}
+                className="w-full px-3 py-2 bg-gray-100 rounded border hover:bg-gray-200 text-sm"
+              >
+                点击展开渐变色选项
+              </button>
+            )}
+          </div>
+
+          {/* MiniMessage 格式 - 格式按钮 */}
+          <div>
+            <div className="text-xs font-semibold mb-1">格式:</div>
+            <div className="flex flex-wrap gap-2">
+              {miniMessageFormatButtons.map((button) => (
+                <button
+                  key={button.code}
+                  className="flex items-center p-2 rounded border hover:bg-gray-100 transition-colors"
+                  onClick={() => Transforms.insertText(editor, button.code)}
+                  title={button.name}
+                >
+                  <span className="material-icons mr-1">{button.icon}</span>
+                  <span className="text-sm">{button.name}</span>
+                  <span className="ml-1 text-xs font-mono">{button.code}</span>
+                </button>
+              ))}
+              
+              {/* 添加结束标签按钮 */}
+              <button
+                className="flex items-center p-2 rounded border hover:bg-gray-100 transition-colors"
+                onClick={() => Transforms.insertText(editor, '</color>')}
+                title="结束颜色标签"
+              >
+                <span className="material-icons mr-1">format_color_reset</span>
+                <span className="text-sm">结束颜色</span>
+                <span className="ml-1 text-xs font-mono">&lt;/color&gt;</span>
+              </button>
+              
+              <button
+                className="flex items-center p-2 rounded border hover:bg-gray-100 transition-colors"
+                onClick={() => Transforms.insertText(editor, '</gradient>')}
+                title="结束渐变标签"
+              >
+                <span className="material-icons mr-1">gradient</span>
+                <span className="text-sm">结束渐变</span>
+                <span className="ml-1 text-xs font-mono">&lt;/gradient&gt;</span>
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
