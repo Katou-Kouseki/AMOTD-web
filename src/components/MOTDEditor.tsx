@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createEditor, Descendant, Node, Transforms, BaseEditor } from 'slate';
 import { Slate, Editable, withReact, useSlate, ReactEditor } from 'slate-react';
 import ColorPicker from './ColorPicker';
+import styles from '../styles/editor.module.css';
 
 export type CustomElement = { type: 'paragraph'; children: CustomText[] };
 export type CustomText = { text: string; color?: string };
@@ -65,15 +66,14 @@ export default function MOTDEditor({
   const [editor] = useState(() => withReact(createEditor()));
 
   // 添加初始化效果
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    // 只在初始渲染时触发一次onChange
+    // 初始化时触发onChange
     if (onChange && initialValue) {
       const plainText = serializeToString(initialValue);
       console.log("初始化文本:", plainText);
       onChange(initialValue, plainText);
     }
-  }, []);  // 空依赖数组，仅在挂载时运行
+  }, [initialValue, onChange, serializeToString]); // 添加所有依赖项
 
   return (
     <Slate 
@@ -204,7 +204,7 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
                   title={color.name}
                 >
                   <div 
-                    className="w-8 h-8 rounded border"
+                    className={styles.colorSwatch}
                     style={{ backgroundColor: color.color }}
                   ></div>
                   <div className="text-xs mt-1 font-mono">&{color.code}</div>
@@ -263,7 +263,7 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
                   title={color.name}
                 >
                   <div 
-                    className="w-8 h-8 rounded border"
+                    className={styles.colorSwatch}
                     style={{ backgroundColor: color.color }}
                   ></div>
                   <div className="text-xs mt-1 truncate max-w-full">{color.code}</div>
@@ -336,10 +336,13 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
                   title="应用渐变色"
                 >
                   应用渐变色
-                  <div className="mt-1 w-full h-4 rounded" 
-                       style={{background: `linear-gradient(to right, ${startColor || "#FF5555"}, ${endColor || "#5555FF"})`}}>
-      </div>
-    </button>
+                  <div 
+                    className={styles.gradientPreview}
+                    style={{ 
+                      background: `linear-gradient(to right, ${startColor || "#FF5555"}, ${endColor || "#5555FF"})` 
+                    }}
+                  ></div>
+                </button>
               </div>
             )}
             
