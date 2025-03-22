@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { createEditor, Descendant, Editor, Node, Transforms, BaseEditor } from 'slate';
+import React, { useState, useEffect } from 'react';
+import { createEditor, Descendant, Node, Transforms, BaseEditor } from 'slate';
 import { Slate, Editable, withReact, useSlate, ReactEditor } from 'slate-react';
 import ColorPicker from './ColorPicker';
 
@@ -37,35 +37,11 @@ export const MC_COLORS = [
 ].sort((a, b) => a.code.localeCompare(b.code));
 
 // 为组件的props添加类型定义
-interface StyleButtonProps {
-  code: string;
-  color: string;
-  label: string;
-}
-
-// const StyleButton = ({ code, color, label }: StyleButtonProps) => {
-//   const editor = useSlate();
-//   
-//   const handleClick = () => {
-//     Transforms.insertText(editor, `&${code}`);
-//   };
-//
-//   return (
-//     <button
-//       onClick={handleClick}
-//       className="w-8 h-8 rounded border-2 border-gray-300 relative"
-//       style={{ backgroundColor: color }}
-//       title={label}
-//     >
-//       <div 
-//         className="absolute inset-0 flex items-center justify-center"
-//         style={{ backgroundColor: 'rgba(255,255,255,0.3)' }}
-//       >
-//         <span className="text-xs font-bold text-black">{code}</span>
-//       </div>
-//     </button>
-//   );
-// };
+// interface StyleButtonProps {
+//   code: string;
+//   color: string;
+//   label: string;
+// }
 
 interface MOTDEditorProps {
   initialValue?: Descendant[];
@@ -422,142 +398,15 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
 };
 
 // 为工具栏组件添加类型
-interface ToolbarProps {
-  editor: any; // 可以使用更具体的Slate编辑器类型
-}
+// interface ToolbarProps {
+//   editor: any; 
+// }
 
-const MCFormatToolbar = ({ editor }: ToolbarProps) => (
-  <>
-    {/* 现有的颜色按钮 */}
-    <div className="flex flex-wrap gap-1 mr-2">
-      {MC_COLORS.map(color => (
-        <button
-          key={color.code}
-          onClick={() => Transforms.insertText(editor, `&${color.code}`)}
-          className="w-5 h-5 rounded"
-          style={{ backgroundColor: color.color }}
-          title={color.name}
-        />
-      ))}
-    </div>
-    
-    {/* 现有的格式按钮 */}
-    <div className="flex gap-2">
-      <button
-        onClick={() => Transforms.insertText(editor, '&l')}
-          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
-          title="粗体"
-        >
-          <span className="font-bold">B</span>
-        </button>
-        <button
-        onClick={() => Transforms.insertText(editor, '&o')}
-          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 italic"
-          title="斜体"
-        >
-          <span className="italic">I</span>
-        </button>
-        <button
-        onClick={() => Transforms.insertText(editor, '&m')}
-          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 relative"
-          title="删除线"
-        >
-          <span className="relative">
-            S
-            <div className="absolute inset-x-0 top-1/2 h-px bg-current transform -translate-y-1/2" />
-          </span>
-        </button>
-        <button
-        onClick={() => Transforms.insertText(editor, '&n')}
-        className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 underline"
-        title="下划线"
-      >
-        U
-      </button>
-      <button
-        onClick={() => Transforms.insertText(editor, '&r')}
-          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
-          title="重置样式"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M8 3V1M8 3C5.23858 3 3 5.23858 3 8C3 10.7614 5.23858 13 8 13C10.7614 13 13 10.7614 13 8C13 6.1455 11.8857 4.502 10.2857 3.71429" stroke="currentColor" strokeLinecap="round"/>
-            <path d="M11 5L13 3L11 1" stroke="currentColor" strokeLinecap="square"/>
-          </svg>
-        </button>
-    </div>
-  </>
-);
+// 移除或注释掉未使用的组件
+// const MCFormatToolbar = ({ editor }: ToolbarProps) => (
+//   ...
+// );
 
-// 添加MiniMessage工具栏组件
-const MinimessageToolbar = ({ editor }: ToolbarProps) => {
-  const [selectedColor, setSelectedColor] = useState('#AA0000');
-  
-  // 应用颜色的函数
-  const applyColor = (color: string) => {
-    // 将颜色转换为hex格式并去掉#前缀
-    const hexColor = color.replace('#', '');
-    Transforms.insertText(editor, `<color:#${hexColor}>`);
-  };
-  
-  return (
-    <>
-      {/* 调色盘部分 */}
-      <div className="flex flex-col items-center mr-4">
-        <ColorPicker 
-          color={selectedColor} 
-          onChange={(color: string) => setSelectedColor(color)} 
-        />
-        <button
-          onClick={() => applyColor(selectedColor)}
-          className="mt-2 px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
-          title="应用颜色"
-        >
-          应用颜色
-        </button>
-      </div>
-      
-      {/* 格式按钮 - MiniMessage版本 */}
-      <button
-        onClick={() => Transforms.insertText(editor, '<bold>')}
-        className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
-        title="粗体"
-      >
-        <span className="font-bold">B</span>
-      </button>
-      <button
-        onClick={() => Transforms.insertText(editor, '<italic>')}
-        className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 italic"
-        title="斜体"
-      >
-        <span className="italic">I</span>
-      </button>
-      <button
-        onClick={() => Transforms.insertText(editor, '<strikethrough>')}
-        className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 relative"
-        title="删除线"
-      >
-        <span className="relative">
-          S
-          <div className="absolute inset-x-0 top-1/2 h-px bg-current transform -translate-y-1/2" />
-        </span>
-      </button>
-      <button
-        onClick={() => Transforms.insertText(editor, '<underlined>')}
-          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 underline"
-          title="下划线"
-        >
-          U
-        </button>
-      <button
-        onClick={() => Transforms.insertText(editor, '<reset>')}
-        className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
-        title="重置样式"
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M8 3V1M8 3C5.23858 3 3 5.23858 3 8C3 10.7614 5.23858 13 8 13C10.7614 13 13 10.7614 13 8C13 6.1455 11.8857 4.502 10.2857 3.71429" stroke="currentColor" strokeLinecap="round"/>
-          <path d="M11 5L13 3L11 1" stroke="currentColor" strokeLinecap="square"/>
-        </svg>
-      </button>
-    </>
-  );
-};
+// const MinimessageToolbar = ({ editor }: ToolbarProps) => {
+//   ...
+// };
