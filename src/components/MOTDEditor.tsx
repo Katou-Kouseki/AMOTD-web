@@ -140,7 +140,7 @@ interface FormatToolbarProps {
 
 export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarProps) => {
   const editor = useSlate();
-
+  
   // Minecraft 格式化代码映射
   const colorCodes = [
     { code: '0', name: '黑色', color: '#000000' },
@@ -276,13 +276,13 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
                 { name: '深灰色', color: '#555555', code: 'dark_gray' },
                 { name: '黑色', color: '#000000', code: 'black' }
               ].map((color) => (
-                <button
+    <button
                   key={color.code}
                   className="flex flex-col items-center p-2 rounded border hover:bg-gray-100 transition-colors"
                   onClick={() => Transforms.insertText(editor, `<color:${color.code}>`)}
                   title={color.name}
-                >
-                  <div 
+    >
+      <div 
                     className="w-8 h-8 rounded border"
                     style={{ backgroundColor: color.color }}
                   ></div>
@@ -358,8 +358,8 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
                   应用渐变色
                   <div className="mt-1 w-full h-4 rounded" 
                        style={{background: `linear-gradient(to right, ${startColor || "#FF5555"}, ${endColor || "#5555FF"})`}}>
-                  </div>
-                </button>
+      </div>
+    </button>
               </div>
             )}
             
@@ -442,29 +442,29 @@ const MCFormatToolbar = ({ editor }: ToolbarProps) => (
     <div className="flex gap-2">
       <button
         onClick={() => Transforms.insertText(editor, '&l')}
-        className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
-        title="粗体"
-      >
-        <span className="font-bold">B</span>
-      </button>
-      <button
+          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+          title="粗体"
+        >
+          <span className="font-bold">B</span>
+        </button>
+        <button
         onClick={() => Transforms.insertText(editor, '&o')}
-        className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 italic"
-        title="斜体"
-      >
-        <span className="italic">I</span>
-      </button>
-      <button
+          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 italic"
+          title="斜体"
+        >
+          <span className="italic">I</span>
+        </button>
+        <button
         onClick={() => Transforms.insertText(editor, '&m')}
-        className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 relative"
-        title="删除线"
-      >
-        <span className="relative">
-          S
-          <div className="absolute inset-x-0 top-1/2 h-px bg-current transform -translate-y-1/2" />
-        </span>
-      </button>
-      <button
+          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 relative"
+          title="删除线"
+        >
+          <span className="relative">
+            S
+            <div className="absolute inset-x-0 top-1/2 h-px bg-current transform -translate-y-1/2" />
+          </span>
+        </button>
+        <button
         onClick={() => Transforms.insertText(editor, '&n')}
         className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 underline"
         title="下划线"
@@ -473,14 +473,14 @@ const MCFormatToolbar = ({ editor }: ToolbarProps) => (
       </button>
       <button
         onClick={() => Transforms.insertText(editor, '&r')}
-        className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
-        title="重置样式"
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M8 3V1M8 3C5.23858 3 3 5.23858 3 8C3 10.7614 5.23858 13 8 13C10.7614 13 13 10.7614 13 8C13 6.1455 11.8857 4.502 10.2857 3.71429" stroke="currentColor" strokeLinecap="round"/>
-          <path d="M11 5L13 3L11 1" stroke="currentColor" strokeLinecap="square"/>
-        </svg>
-      </button>
+          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+          title="重置样式"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 3V1M8 3C5.23858 3 3 5.23858 3 8C3 10.7614 5.23858 13 8 13C10.7614 13 13 10.7614 13 8C13 6.1455 11.8857 4.502 10.2857 3.71429" stroke="currentColor" strokeLinecap="round"/>
+            <path d="M11 5L13 3L11 1" stroke="currentColor" strokeLinecap="square"/>
+          </svg>
+        </button>
     </div>
   </>
 );
@@ -540,11 +540,11 @@ const MinimessageToolbar = ({ editor }: ToolbarProps) => {
       </button>
       <button
         onClick={() => Transforms.insertText(editor, '<underlined>')}
-        className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 underline"
-        title="下划线"
-      >
-        U
-      </button>
+          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 underline"
+          title="下划线"
+        >
+          U
+        </button>
       <button
         onClick={() => Transforms.insertText(editor, '<reset>')}
         className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"

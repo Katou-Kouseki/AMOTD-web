@@ -20,7 +20,7 @@ export default function Home() {
   const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     try {
       setUploadingIcon(true);
       
@@ -30,7 +30,7 @@ export default function Home() {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
-        
+
         canvas.width = 64;
         canvas.height = 64;
         const scale = Math.min(64 / img.width, 64 / img.height);
@@ -38,7 +38,7 @@ export default function Home() {
         const height = img.height * scale;
         const x = (64 - width) / 2;
         const y = (64 - height) / 2;
-        
+
         ctx.drawImage(img, x, y, width, height);
         
         // 将canvas转换为Blob
@@ -60,7 +60,7 @@ export default function Home() {
             // 保存图片路径
             setIconPath(result.filepath);
             // 设置预览
-            setServerIcon(canvas.toDataURL('image/png'));
+        setServerIcon(canvas.toDataURL('image/png'));
           }
           
           setUploadingIcon(false);
@@ -70,11 +70,11 @@ export default function Home() {
       // 读取文件
       const reader = new FileReader();
       reader.onload = (e) => {
-        if (e.target && e.target.result) {
-          img.src = e.target.result as string;
-        }
-      };
-      reader.readAsDataURL(file);
+      if (e.target && e.target.result) {
+        img.src = e.target.result as string;
+      }
+    };
+    reader.readAsDataURL(file);
       
     } catch (error) {
       console.error('处理图片错误:', error);
@@ -294,30 +294,76 @@ export default function Home() {
           <h2 className="text-2xl mb-4">预览</h2>
           <div className="relative border-2 border-gray-800 rounded p-4 bg-[url('/options_background.png')] bg-repeat text-white font-minecraft" style={{ minHeight: '110px' }}>
             <div className="relative z-10 flex items-start mb-3 pointer-events-auto">
-              
+            
               <div className="relative w-16 h-16 mr-4">
+                <input 
+                  type="file" 
+                  id="icon-upload" 
+                  accept="image/png,image/jpeg,image/gif" 
+                  className="hidden" 
+                  onChange={handleIconUpload} 
+                />
+                
+                {/* 基础图像 */}
+                <Image
+                  src={serverIcon ? serverIcon : '/unknown_server.jpg'}
+                  alt="Server Icon"
+                  fill
+                  className="rounded object-cover"
+                />
+                
+                {/* 上传中覆盖层 */}
+                {uploadingIcon && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 text-white rounded z-20">
+                    上传中...
+                  </div>
+                )}
+                
+                {/* 未上传状态闪烁边框 - 独立分离 */}
+                {!serverIcon && !uploadingIcon && (
+                  <div className="absolute inset-0 border-2 border-yellow-400 rounded z-10 animate-[pulse_1.5s_ease-in-out_infinite]"></div>
+                )}
+                
+                {/* 悬停效果和文字层 - 使用内联样式确保动画生效 */}
                 <label 
                   htmlFor="icon-upload"
-                  className="absolute inset-0 cursor-pointer group"
+                  className="absolute inset-0 cursor-pointer flex items-center justify-center z-20"
+                  style={{
+                    backgroundColor: serverIcon ? 'rgba(0,0,0,0)' : 'rgba(0,0,0,0.15)',
+                    transition: 'all 0.3s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.35)';
+                    const textElement = e.currentTarget.querySelector('span');
+                    if (textElement) textElement.style.opacity = '1';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = serverIcon ? 'rgba(0,0,0,0)' : 'rgba(0,0,0,0.15)';
+                    const textElement = e.currentTarget.querySelector('span');
+                    if (textElement && serverIcon) textElement.style.opacity = '0';
+                  }}
                 >
-                  {uploadingIcon ? (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white">
-                      上传中...
-                    </div>
-                  ) : serverIcon && (
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center">
-                      <span className="text-white opacity-0 group-hover:opacity-100 text-sm">
-                        上传
-                      </span>
-                    </div>
-                  )}
-                  <Image
-                    src={serverIcon ? serverIcon : '/unknown_server.jpg'}
-                    alt="Server Icon"
-                    fill
-                    className="rounded object-cover"
-                  />
+                  <span 
+                    className="text-white font-bold text-sm rounded px-2 py-1"
+                    style={{
+                      opacity: serverIcon ? '0' : '1',
+                      transition: 'opacity 0.3s ease',
+                      backgroundColor: 'rgba(0,0,0,0.3)',
+                    }}
+                  >
+                    上传
+                  </span>
                 </label>
+                
+                {/* 未上传状态的额外闪烁层 */}
+                {!serverIcon && !uploadingIcon && (
+                  <div 
+                    className="absolute inset-0 rounded z-10" 
+                    style={{
+                      animation: 'pulseOpacity 2s ease-in-out infinite',
+                    }}
+                  ></div>
+                )}
               </div>
               <div style={{ width: 'calc(100% - 80px)' }}>
                 <div className="text-white text-base font-normal mb-1">Minecraft Server</div>
@@ -345,20 +391,13 @@ export default function Home() {
                     <span className="text-gray-400">请在编辑器中输入文本</span>
                   )}
                 </div>
-                <div className="absolute right-4 top-4 flex items-center text-sm">
-                  <span className="w-2 h-2 bg-green-500 rounded-full mr-2" />
-                  0/20 玩家在线
-                </div>
+              <div className="absolute right-4 top-4 flex items-center text-sm">
+                <span className="w-2 h-2 bg-green-500 rounded-full mr-2" />
+                0/20 玩家在线
               </div>
             </div>
           </div>
-          <input
-            type="file"
-            accept="image/png, image/jpeg"
-            onChange={handleIconUpload}
-            className="hidden"
-            id="icon-upload"
-          />
+          </div>
           <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
             <div>调试信息:</div>
             <div>当前格式: {isMinimessage ? "MiniMessage" : "Minecraft"}</div>
@@ -366,7 +405,6 @@ export default function Home() {
             <div>内容长度: {motdText?.length || 0}</div>
             {isMinimessage && (
               <div>
-                <div>解析后内容:</div>
                 <pre className="mt-1 p-1 bg-white rounded border overflow-x-auto">
                   {parseMinimessageText(motdText)}
                 </pre>
@@ -379,7 +417,7 @@ export default function Home() {
               <a href={motdUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-500 hover:underline">
                 {motdUrl}
               </a>
-            </div>
+        </div>
           )}
         </div>
       </div>
@@ -413,6 +451,13 @@ export default function Home() {
           </a>
         </div>
       </footer>
+      {/* 添加必要的内联样式 */}
+      <style jsx>{`
+        @keyframes pulseOpacity {
+          0%, 100% { background-color: rgba(0,0,0,0.15); }
+          50% { background-color: rgba(0,0,0,0.35); }
+        }
+      `}</style>
     </main>
   );
 }
