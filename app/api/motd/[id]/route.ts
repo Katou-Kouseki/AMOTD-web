@@ -5,20 +5,12 @@ import path from 'path';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    // 检查params是否存在
-    if (!params || typeof params !== 'object') {
-      console.error('params不是有效对象:', params);
-      return NextResponse.json({
-        error: '无效的请求参数'
-      }, { status: 400 });
-    }
-
-    // 安全地访问id
-    const id = params.id;
-    console.log('获取到的ID:', id); // 添加调试信息
+    // 使用正确的格式访问id参数
+    const { id } = context.params;
+    console.log('获取到的ID:', id);
     
     if (!id || id.length !== 8) {
       return NextResponse.json({

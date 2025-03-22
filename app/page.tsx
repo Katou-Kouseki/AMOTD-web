@@ -4,12 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import MOTDEditor, { MC_COLORS } from '../src/components/MOTDEditor';
 import { Descendant } from 'slate';
 
-// 添加CustomElement类型定义
-type CustomElement = {
-  type: string;
-  children: { text: string }[];
-};
-
 export default function Home() {
   // const initialValue: CustomElement[] = [{
   //   type: 'paragraph' as const, 
@@ -27,10 +21,14 @@ export default function Home() {
   }>>([]);
   const [motdUrl, setMotdUrl] = useState<string | null>(null);
   const [isMinimessage, setIsMinimessage] = useState(false);
-  const [motdContent, setMotdContent] = useState<Descendant[]>([]); // 用于将来扩展编辑器功能
-  const [expireTime, setExpireTime] = useState<number | null>(null); // 用于将来改进过期时间处理
-  const [countdown, setCountdown] = useState<string | null>(null); // 用于将来改进过期倒计时显示
   const [rateLimitError, setRateLimitError] = useState<string | null>(null);
+
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  // 这些状态变量目前未使用，但为将来功能预留
+  const [motdContent, setMotdContent] = useState<Descendant[]>([]);
+  const [expireTime, setExpireTime] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState<string | null>(null);
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
