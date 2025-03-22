@@ -403,21 +403,49 @@ export default function Home() {
             <div>当前格式: {isMinimessage ? "MiniMessage" : "Minecraft"}</div>
             <div>文本内容: {motdText || "(空)"}</div>
             <div>内容长度: {motdText?.length || 0}</div>
-            {isMinimessage && (
-              <div>
-                <pre className="mt-1 p-1 bg-white rounded border overflow-x-auto">
-                  {parseMinimessageText(motdText)}
-                </pre>
-              </div>
-            )}
           </div>
           {motdUrl && (
             <div className="mt-4 p-2 bg-gray-100 rounded-md break-all">
-              <span className="text-gray-500">MOTD URL:</span>
-              <a href={motdUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-500 hover:underline">
-                {motdUrl}
-              </a>
-        </div>
+              <div className="mb-2 flex items-center">
+                <span className="text-gray-500">样式码:</span>
+                <span className="ml-2 font-mono text-sm overflow-x-auto whitespace-pre-wrap">
+                  {/* 提取并显示URL中的ID部分 */}
+                  {motdUrl.split('/').pop()}
+                </span>
+                <button
+                  onClick={() => {
+                    const styleCode = motdUrl.split('/').pop() || '';
+                    navigator.clipboard.writeText(styleCode)
+                      .then(() => {
+                        // 可以添加复制成功的提示，比如改变按钮文字
+                        const btn = document.getElementById('copy-btn');
+                        if (btn) {
+                          const originalText = btn.innerText;
+                          btn.innerText = '已复制';
+                          btn.classList.add('bg-green-500');
+                          btn.classList.remove('bg-gray-200');
+                          setTimeout(() => {
+                            btn.innerText = originalText;
+                            btn.classList.remove('bg-green-500');
+                            btn.classList.add('bg-gray-200');
+                          }, 2000);
+                        }
+                      })
+                      .catch(err => console.error('复制失败:', err));
+                  }}
+                  id="copy-btn"
+                  className="ml-2 px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded text-xs transition-colors"
+                >
+                  复制
+                </button>
+              </div>
+              <div>
+                <span className="text-gray-500">MOTD URL:</span>
+                <a href={motdUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-500 hover:underline">
+                  {motdUrl}
+                </a>
+              </div>
+            </div>
           )}
         </div>
       </div>
