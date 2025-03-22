@@ -4,11 +4,17 @@ import { useState, useEffect, useCallback } from 'react';
 import MOTDEditor, { MC_COLORS } from '../src/components/MOTDEditor';
 import { Descendant } from 'slate';
 
+// 添加CustomElement类型定义
+type CustomElement = {
+  type: string;
+  children: { text: string }[];
+};
+
 export default function Home() {
-  const initialValue: CustomElement[] = [{
-    type: 'paragraph' as const, 
-    children: [{ text: '' }] 
-  }];
+  // const initialValue: CustomElement[] = [{
+  //   type: 'paragraph' as const, 
+  //   children: [{ text: '' }] 
+  // }];
   const [serverIcon, setServerIcon] = useState<string | null>(null);
   const [motdText, setMotdText] = useState<string>('');
   const [uploadingIcon, setUploadingIcon] = useState(false);
@@ -21,9 +27,9 @@ export default function Home() {
   }>>([]);
   const [motdUrl, setMotdUrl] = useState<string | null>(null);
   const [isMinimessage, setIsMinimessage] = useState(false);
-  const [motdContent, setMotdContent] = useState<Descendant[]>([]);
-  const [expireTime, setExpireTime] = useState<number | null>(null);
-  const [countdown, setCountdown] = useState<string | null>(null);
+  const [motdContent, setMotdContent] = useState<Descendant[]>([]); // 用于将来扩展编辑器功能
+  const [expireTime, setExpireTime] = useState<number | null>(null); // 用于将来改进过期时间处理
+  const [countdown, setCountdown] = useState<string | null>(null); // 用于将来改进过期倒计时显示
   const [rateLimitError, setRateLimitError] = useState<string | null>(null);
 
   const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -225,13 +231,6 @@ export default function Home() {
     
     console.log("解析结果:", allLineSegments);
     return allLineSegments;
-  };
-
-  // 在组件顶部添加这个帮助函数
-  const getColorClass = (color: string) => {
-    // 设置一个自定义属性名
-    const style = { '--mc-color': color } as React.CSSProperties;
-    return style;
   };
 
   // 修改parseMinimessageText函数，删除换行符的处理部分
@@ -541,7 +540,7 @@ export default function Home() {
           {/* 当没有样式码时显示提示 */}
           {motdUrls.length === 0 && (
             <div className="mt-4 p-4 bg-gray-100 rounded-md text-center text-gray-500">
-              点击"生成样式码"按钮创建MOTD样式码
+              点击&quot;生成样式码&quot;按钮创建MOTD样式码
           </div>
           )}
           {/* 显示速率限制错误 */}
