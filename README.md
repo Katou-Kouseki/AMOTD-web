@@ -3,16 +3,23 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub stars](https://img.shields.io/github/stars/x1aoren/amotd-web?style=social)](https://github.com/x1aoren/amotd-web/stargazers)
 
-一个现代化的Minecraft服务器MOTD生成和预览工具，支持完整的Minecraft格式化代码和自定义服务器图标。
-主要针对MOTD插件而制作
+## 简介
+
+Minecraft MOTD 生成器是一款专业的服务器欢迎信息设计工具，为服务器管理员提供直观、强大的MOTD(Message of the Day)创建体验。支持标准Minecraft格式代码和MiniMessage格式，让您轻松打造个性化服务器欢迎信息，提升玩家第一印象。
+
+无论是简洁的文本格式化，还是复杂的渐变色效果，本工具都能满足您的创意需求，同时确保MOTD在各种Minecraft客户端中正确显示。生成的样式码可直接应用于主流MOTD插件，无需复杂配置。
 
 ## 功能特点
 
-- 直观的MOTD编辑器，支持实时预览
-- 完整支持Minecraft格式化代码（颜色、粗体、斜体、下划线、删除线）
-- 支持自定义服务器图标上传
-- 生成样式码分享链接
-- 符合Minecraft UI设计风格的界面
+- **双格式支持**：同时支持Minecraft原版格式代码(§)和MiniMessage高级格式
+- **实时可视化预览**：所见即所得的编辑体验，立即预览最终效果
+- **专业格式工具栏**：包含完整的颜色选择器和格式控制按钮
+- **服务器图标上传**：支持自定义64x64服务器图标上传和预览
+- **高级MiniMessage功能**：支持渐变色、自定义十六进制颜色等高级格式
+- **样式码生成与管理**：生成可共享的样式码，带自动过期机制
+- **资源优化保护**：限制生成频率，自动清理过期资源
+- **多样式码管理**：管理多个样式码，带倒计时显示和一键复制
+- **符合Minecraft UI风格**：遵循Minecraft设计语言，提供原汁原味的界面体验
 
 ## 贡献者
 
@@ -25,6 +32,7 @@
 ## 快速开始
 
 git clone https://github.com/x1aoren/amotd-web.git
+
 cd amotd-web
 
 ### 安装依赖

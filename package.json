@@ -1,6 +1,6 @@
 {
-  "name": "amotd-web",
-  "version": "0.1.0",
+  "name": "minecraft-motd-generator",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",

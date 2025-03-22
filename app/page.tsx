@@ -423,7 +423,7 @@ export default function Home() {
                   >
                     上传
                   </span>
-                </label>
+              </label>
                 
                 {/* 未上传状态的额外闪烁层 */}
                 {!serverIcon && !uploadingIcon && (
@@ -460,7 +460,7 @@ export default function Home() {
                   ) : (
                     <span className="text-gray-400">请在编辑器中输入文本</span>
                   )}
-                </div>
+            </div>
               <div className="absolute right-4 top-4 flex items-center text-sm">
                 <span className="w-2 h-2 bg-green-500 rounded-full mr-2" />
                 0/20 玩家在线
@@ -520,7 +520,7 @@ export default function Home() {
                       </div>
                       <span className={`text-xs ${item.countdown === '已过期' ? 'text-red-500' : 'text-orange-500'}`}>
                         {item.countdown}
-                      </span>
+                    </span>
                     </div>
                     <div className="text-xs text-gray-600 truncate">
                       <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
@@ -528,27 +528,27 @@ export default function Home() {
                       </a>
                     </div>
                   </div>
-                ))}
-              </div>
+                  ))}
+                </div>
             </div>
           )}
           {/* 当没有样式码时显示提示 */}
           {motdUrls.length === 0 && (
             <div className="mt-4 p-4 bg-gray-100 rounded-md text-center text-gray-500">
               点击"生成样式码"按钮创建MOTD样式码
-            </div>
+          </div>
           )}
           {/* 显示速率限制错误 */}
           {rateLimitError && (
             <div className="mt-4 p-2 bg-red-100 rounded-md text-red-700 text-sm">
               {rateLimitError}
-            </div>
+        </div>
           )}
         </div>
       </div>
       <footer className="mt-16 pt-8 border-t border-gray-200 text-center text-gray-500 text-sm">
         <div className="mb-2">
-          Minecraft MOTD 生成器 v0.1.0
+          Minecraft MOTD 生成器 v0.2.0
         </div>
         <div className="flex items-center justify-center space-x-4">
           <a 
