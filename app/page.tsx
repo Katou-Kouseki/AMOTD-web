@@ -234,12 +234,9 @@ export default function Home() {
     return style;
   };
 
-  // 修改parseMinimessageText函数以支持所有MiniMessage颜色和渐变色格式
+  // 修改parseMinimessageText函数，删除换行符的处理部分
   const parseMinimessageText = (text: string) => {
     if (!text) return '';
-    
-    // 添加调试信息
-    console.log("解析MiniMessage格式:", text);
     
     let formattedText = text;
     
@@ -441,8 +438,14 @@ export default function Home() {
                 <div className="w-full bg-transparent border-transparent text-[#AAAAAA] font-minecraft focus:outline-none placeholder-gray-400 cursor-text select-text" style={{ minHeight: '2.2em', maxHeight: '2.2em' }}>
                   {motdText ? (
                     isMinimessage ? (
-                      // MiniMessage格式渲染 - 使用dangerouslySetInnerHTML
-                      <div dangerouslySetInnerHTML={{ __html: parseMinimessageText(motdText) }} />
+                      // MiniMessage格式渲染 - 分行处理
+                      <div className="w-full">
+                        {motdText.split('\n').map((line, lineIndex) => (
+                          <div key={lineIndex} className="line-clamp-1 leading-tight">
+                            <div dangerouslySetInnerHTML={{ __html: parseMinimessageText(line) }} />
+                          </div>
+                        ))}
+                      </div>
                     ) : (
                       // Minecraft格式渲染
                       parseFormattedText(motdText).map((lineSegments, lineIndex) => (
