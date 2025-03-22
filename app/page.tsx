@@ -478,6 +478,7 @@ export default function Home() {
             <div>当前格式: {isMinimessage ? "MiniMessage" : "Minecraft"}</div>
             <div>文本内容: {motdText || "(空)"}</div>
             <div>内容长度: {motdText?.length || 0}</div>
+            <div>当前样式码URL: {motdUrl || "(未生成)"}</div>
           </div>
           {/* 样式码显示区域 */}
           {motdUrls.length > 0 && (
