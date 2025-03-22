@@ -65,6 +65,7 @@ export default function MOTDEditor({
   const [editor] = useState(() => withReact(createEditor()));
 
   // 添加初始化效果
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     // 只在初始渲染时触发一次onChange
     if (onChange && initialValue) {
@@ -72,7 +73,7 @@ export default function MOTDEditor({
       console.log("初始化文本:", plainText);
       onChange(initialValue, plainText);
     }
-  }, []);
+  }, []);  // 空依赖数组，仅在挂载时运行
 
   return (
     <Slate 
