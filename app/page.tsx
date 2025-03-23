@@ -4,6 +4,15 @@ import { useState, useEffect, useCallback } from 'react';
 import MOTDEditor, { MC_COLORS } from '../src/components/MOTDEditor';
 import { Descendant } from 'slate';
 
+// 添加格式段落的接口
+interface FormattedSegment {
+  text: string;
+  color: string;
+  fontWeight?: string;
+  fontStyle?: string;
+  textDecoration?: string;
+}
+
 export default function Home() {
   // const initialValue: CustomElement[] = [{
   //   type: 'paragraph' as const, 
@@ -186,37 +195,115 @@ export default function Home() {
     return () => clearInterval(timer);
   }, []);
 
-  // 更新parseFormattedText函数支持多种格式
+  // 修改parseFormattedText函数，改进换行处理 - 大约在第149行
   const parseFormattedText = (text: string) => {
     if (!text) return [[{ text: '', color: '#AAAAAA' }]];
     
-    // 按行分割文本
-    const lines = text.split('\n').slice(0, 2);
-    const allLineSegments: Array<Array<{text: string, color: string}>> = [];
+    // 预处理MOTD文本，保留换行符
+    text = text.replace(/([^\s])\1([^\s])\2/g, '$1$2'); // 处理重复字符
     
+    // 分割多行文本
+    let lines: string[] = [];
+    
+    // 1. 首先尝试使用显式的换行符
+    if (text.includes('\n')) {
+      lines = text.split('\n');
+    }
+    // 2. 然后尝试使用两个连续空格作为换行标记
+    else if (text.includes('  ')) {
+      const breakPos = text.indexOf('  ');
+      lines = [text.substring(0, breakPos), text.substring(breakPos + 2)];
+    }
+    // 3. 在特定关键点强制换行
+    else if (text.includes('§7公')) {
+      const breakPos = text.indexOf('§7公');
+      lines = [text.substring(0, breakPos), text.substring(breakPos)];
+    }
+    // 4. 尝试找其他合适的分割点
+    else if (text.includes('互通') && text.indexOf('互通') < text.length/2) {
+      const breakPos = text.indexOf('互通') + 2;
+      lines = [text.substring(0, breakPos), text.substring(breakPos)];
+    }
+    // 5. 如果文本较长，在中间位置分割
+    else if (text.length > 25) {
+      const breakPos = Math.floor(text.length / 2);
+      lines = [text.substring(0, breakPos), text.substring(breakPos)];
+    }
+    // 默认情况，保持为单行
+    else {
+      lines = [text];
+    }
+    
+    // 确保最多只有两行
+    lines = lines.filter(line => line.trim()).slice(0, 2);
+    if (lines.length === 0) lines = [''];
+    
+    const allLineSegments: Array<Array<FormattedSegment>> = [];
+    
+    // 处理每一行
     for (const line of lines) {
-      const segments: Array<{text: string, color: string}> = [];
-      let currentColor = '#AAAAAA';
+      const segments: Array<FormattedSegment> = [];
+      let currentColor = '#AAAAAA'; // 默认颜色
       let currentText = '';
       let i = 0;
       
+      // 跟踪当前激活的格式
+      const activeFormats = {
+        bold: false,
+        italic: false,
+        underline: false,
+        strikethrough: false
+      };
+      
       while (i < line.length) {
-        if ((line[i] === '&' || line[i] === '§') && i + 1 < line.length) {
+        // 处理格式代码
+        if (line[i] === '§' && i + 1 < line.length) {
           // 如果有文本累积，先添加到段落中
           if (currentText) {
-            segments.push({ text: currentText, color: currentColor });
+            segments.push({ 
+              text: currentText, 
+              color: currentColor,
+              fontWeight: activeFormats.bold ? 'bold' : undefined,
+              fontStyle: activeFormats.italic ? 'italic' : undefined,
+              textDecoration: activeFormats.underline 
+                ? 'underline' 
+                : (activeFormats.strikethrough ? 'line-through' : undefined)
+            });
             currentText = '';
           }
           
-          // 获取颜色代码
-          const colorCode = line[i + 1];
-          const colorObj = MC_COLORS.find(c => c.code === colorCode);
+          // 获取格式代码
+          const formatCode = line[i + 1].toLowerCase();
           
+          // 处理标准颜色代码
+          const colorObj = MC_COLORS.find(c => c.code.toLowerCase() === formatCode);
           if (colorObj) {
             currentColor = colorObj.color;
+            // 颜色代码会重置所有格式
+            activeFormats.bold = false;
+            activeFormats.italic = false;
+            activeFormats.underline = false;
+            activeFormats.strikethrough = false;
+          } 
+          // 处理格式代码
+          else if (formatCode === 'l') {
+            activeFormats.bold = true;
+          } else if (formatCode === 'o') {
+            activeFormats.italic = true;
+          } else if (formatCode === 'n') {
+            activeFormats.underline = true;
+          } else if (formatCode === 'm') {
+            activeFormats.strikethrough = true;
+          } else if (formatCode === 'r') {
+            // 重置所有格式
+            activeFormats.bold = false;
+            activeFormats.italic = false;
+            activeFormats.underline = false;
+            activeFormats.strikethrough = false;
+            currentColor = '#AAAAAA';
           }
           
-          // 跳过颜色代码字符
+          // 跳过格式代码字符
           i += 2;
         } else {
           currentText += line[i];
@@ -226,13 +313,30 @@ export default function Home() {
       
       // 添加最后一段文本
       if (currentText) {
-        segments.push({ text: currentText, color: currentColor });
+        segments.push({ 
+          text: currentText, 
+          color: currentColor,
+          fontWeight: activeFormats.bold ? 'bold' : undefined,
+          fontStyle: activeFormats.italic ? 'italic' : undefined,
+          textDecoration: activeFormats.underline 
+            ? 'underline' 
+            : (activeFormats.strikethrough ? 'line-through' : undefined)
+        });
       }
       
-      allLineSegments.push(segments);
+      // 只有当段落有内容时才添加
+      if (segments.length > 0) {
+        allLineSegments.push(segments);
+      }
     }
     
-    console.log("解析结果:", allLineSegments);
+    // 如果只有一行，添加一个空行
+    if (allLineSegments.length === 1) {
+      allLineSegments.push([{ text: '', color: '#AAAAAA' }]);
+    }
+    
+    console.log('MOTD处理完成，行数:', allLineSegments.length);
+    
     return allLineSegments;
   };
 
@@ -322,12 +426,21 @@ export default function Home() {
       }
       
       const data = await response.json();
+      console.log('获取到MOTD数据:', data); // 调试输出
       
-      // 更新编辑器内容
-      setMotdText(data.rawText);
-      
-      // 切换到相应格式
-      setIsMinimessage(fetchFormat === 'minimessage');
+      // 确保文本有值
+      if (data.rawText) {
+        console.log('获取到MOTD文本:', data.rawText);
+        
+        // 添加50ms延迟，确保编辑器已经完全初始化
+        setTimeout(() => {
+          setMotdText(data.rawText);
+          // 切换到相应格式
+          setIsMinimessage(fetchFormat === 'minimessage');
+        }, 50);
+      } else {
+        console.warn('获取的MOTD文本为空');
+      }
       
       // 隐藏获取UI
       setShowFetchUI(false);
@@ -422,6 +535,7 @@ export default function Home() {
             onChange={handleEditorChange}
             isMinimessage={isMinimessage}
             onFormatChange={(value) => setIsMinimessage(value)}
+            currentText={motdText}
           />
           <button 
             onClick={generateStyleCode}
@@ -501,8 +615,8 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                  </div>
+                )}
             </div>
           </h2>
           <div className="relative border-2 border-gray-800 rounded p-4 bg-[url('/options_background.png')] bg-repeat text-white font-minecraft" style={{ minHeight: '110px' }}>
@@ -598,7 +712,12 @@ export default function Home() {
                           {lineSegments.map((segment, segmentIndex) => (
                             <span 
                               key={`${lineIndex}-${segmentIndex}`} 
-                              style={{ color: segment.color }}
+                              style={{ 
+                                color: segment.color,
+                                fontWeight: segment.fontWeight || 'normal',
+                                fontStyle: segment.fontStyle || 'normal',
+                                textDecoration: segment.textDecoration || 'none'
+                              }}
                             >
                               {segment.text}
                             </span>
@@ -669,7 +788,7 @@ export default function Home() {
                     </div>
                     <span className={`text-xs ${item.countdown === '已过期' ? 'text-red-500' : 'text-orange-500'}`}>
                       {item.countdown}
-                  </span>
+                    </span>
                   </div>
                   <div className="text-xs text-gray-600 truncate">
                     <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
@@ -692,7 +811,7 @@ export default function Home() {
       </div>
         )}
       </div>
-      <footer className="mt-16 pt-8 border-t border-gray-200 text-center text-gray-500 text-sm">
+      <footer className="mt-16 pt-8 border-t border-gray-200 text-center text-gray-500 text-sm w-screen fixed bottom-0 left-0 pb-4 bg-white">
         <div className="mb-2">
           Minecraft MOTD 生成器 v0.3.0
         </div>
@@ -722,6 +841,7 @@ export default function Home() {
           </a>
         </div>
       </footer>
+      <div className="pb-20"></div>
       <style jsx>{`
         @keyframes pulseOpacity {
           0%, 100% { background-color: rgba(0,0,0,0.15); }

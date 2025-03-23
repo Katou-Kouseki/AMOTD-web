@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createEditor, Descendant, Node, Transforms, BaseEditor } from 'slate';
+import { createEditor, Descendant, Node, Transforms, BaseEditor, Editor } from 'slate';
 import { Slate, Editable, withReact, useSlate, ReactEditor } from 'slate-react';
 import ColorPicker from './ColorPicker';
 import styles from '../styles/editor.module.css';
@@ -45,10 +45,11 @@ export const MC_COLORS = [
 // }
 
 interface MOTDEditorProps {
-  initialValue?: Descendant[];
-  onChange?: (value: Descendant[], plainText: string) => void;
-  isMinimessage?: boolean;
-  onFormatChange?: (isMinimessage: boolean) => void;
+  initialValue: Descendant[];
+  onChange: (value: Descendant[], plainText: string) => void;
+  isMinimessage: boolean;
+  onFormatChange?: (value: boolean) => void;
+  currentText?: string;
 }
 
 // 确保使用正确的 Node 引用
@@ -58,10 +59,11 @@ const serializeToString = (nodes: Descendant[]) => {
 };
 
 export default function MOTDEditor({
-  initialValue = [{ type: 'paragraph' as const, children: [{ text: '' }] }],
+  initialValue,
   onChange,
-  isMinimessage = false,
-  onFormatChange
+  isMinimessage,
+  onFormatChange,
+  currentText = ''
 }: MOTDEditorProps) {
   const [editor] = useState(() => withReact(createEditor()));
   // 添加ref来跟踪上次的文本内容
@@ -69,9 +71,47 @@ export default function MOTDEditor({
 
   // 初始化effect
   useEffect(() => {
-    // 只运行一次的初始化逻辑
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // 仅当currentText有值且与编辑器当前内容不同时更新
+    if (currentText && currentText.trim() !== '') {
+      try {
+        // 1. 确保删除所有前导和尾随的空格和换行符
+        let processedText = currentText.trim().replace(/^\n+|\n+$/g, '');
+        
+        // 2. 处理文本内部的换行
+        const lines = processedText.split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 0);
+        
+        // 3. 确保我们有内容
+        if (lines.length === 0) {
+          return; // 如果没有有效内容，不做任何更改
+        }
+        
+        // 4. 构建完全重置编辑器内容的新Slate值
+        const newValue: Descendant[] = lines.map(line => ({
+          type: 'paragraph',
+          children: [{ text: line }]
+        }));
+        
+        // 5. 完全重置编辑器的内容，而不是尝试删除后再插入
+        editor.children = newValue;
+        // 强制Slate重新渲染
+        editor.onChange();
+        
+        // 6. 重置选择位置到开头
+        Transforms.select(editor, Editor.start(editor, []));
+      } catch (error) {
+        console.error('更新编辑器内容时出错:', error);
+      }
+    }
+  }, [currentText, editor]);
+  
+  // 辅助函数：获取编辑器的纯文本内容
+  const getPlainTextFromEditor = () => {
+    return editor.children
+      .map(node => Node.string(node))
+      .join('\n');
+  };
 
   return (
     <Slate 
@@ -116,7 +156,7 @@ export default function MOTDEditor({
 // 添加接口定义
 interface FormatToolbarProps {
   isMinimessage: boolean;
-  onFormatChange?: (isMinimessage: boolean) => void;
+  onFormatChange?: (value: boolean) => void;
 }
 
 export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarProps) => {
@@ -206,7 +246,10 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
                 >
                   <div 
                     className={styles.colorSwatch}
-                    style={{ backgroundColor: color.color }}
+                    style={{ 
+                      backgroundColor: color.color,
+                      border: '1px solid #999999'
+                    }}
                   ></div>
                   <div className="text-xs mt-1 font-mono">&{color.code}</div>
                 </button>
@@ -257,7 +300,7 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
                 { name: '深灰色', color: '#555555', code: 'dark_gray' },
                 { name: '黑色', color: '#000000', code: 'black' }
               ].map((color) => (
-                <button
+        <button
                   key={color.code}
                   className="flex flex-col items-center p-2 rounded border hover:bg-gray-100 transition-colors"
                   onClick={() => Transforms.insertText(editor, `<color:${color.code}>`)}
@@ -265,10 +308,13 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
                 >
                   <div 
                     className={styles.colorSwatch}
-                    style={{ backgroundColor: color.color }}
+                    style={{ 
+                      backgroundColor: color.color,
+                      border: '1px solid #999999'
+                    }}
                   ></div>
                   <div className="text-xs mt-1 truncate max-w-full">{color.code}</div>
-                </button>
+        </button>
               ))}
             </div>
           </div>
@@ -281,7 +327,7 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
                 color={selectedColor} 
                 onChange={(color: string) => setSelectedColor(color)} 
               />
-              <button
+        <button
                 onClick={() => {
                   const hexColor = selectedColor.replace('#', '');
                   Transforms.insertText(editor, `<color:#${hexColor}>`);
@@ -290,7 +336,7 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
                 title="应用颜色"
               >
                 应用颜色 <span className="text-xs font-mono">&lt;color:#{selectedColor.replace('#', '')}&gt;</span>
-              </button>
+        </button>
             </div>
           </div>
 
@@ -298,15 +344,15 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
           <div className="mb-3">
             <div className="flex items-center justify-between">
               <div className="text-xs font-semibold mb-1">渐变色:</div>
-              <button 
+        <button
                 onClick={() => setGradientExpanded(!gradientExpanded)}
                 className="text-xs text-blue-600 hover:underline flex items-center"
               >
                 {gradientExpanded ? '收起' : '展开'} 
                 <span className="material-icons text-sm ml-1">
                   {gradientExpanded ? 'expand_less' : 'expand_more'}
-                </span>
-              </button>
+          </span>
+        </button>
             </div>
             
             {gradientExpanded && (
@@ -375,7 +421,7 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
               ))}
               
               {/* 添加结束标签按钮 */}
-              <button
+        <button
                 className="flex items-center p-2 rounded border hover:bg-gray-100 transition-colors"
                 onClick={() => Transforms.insertText(editor, '</color>')}
                 title="结束颜色标签"
@@ -383,9 +429,9 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
                 <span className="material-icons mr-1">format_color_reset</span>
                 <span className="text-sm">结束颜色</span>
                 <span className="ml-1 text-xs font-mono">&lt;/color&gt;</span>
-              </button>
+        </button>
               
-              <button
+        <button
                 className="flex items-center p-2 rounded border hover:bg-gray-100 transition-colors"
                 onClick={() => Transforms.insertText(editor, '</gradient>')}
                 title="结束渐变标签"
@@ -393,9 +439,9 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
                 <span className="material-icons mr-1">gradient</span>
                 <span className="text-sm">结束渐变</span>
                 <span className="ml-1 text-xs font-mono">&lt;/gradient&gt;</span>
-              </button>
-            </div>
-          </div>
+        </button>
+      </div>
+      </div>
         </>
       )}
     </div>
