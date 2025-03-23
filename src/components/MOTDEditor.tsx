@@ -75,60 +75,91 @@ export default function MOTDEditor({
   
   // 修改useEffect，只有当确定为外部更新时才更新编辑器
   useEffect(() => {
-    // 只有当有新的外部文本时才处理
-    if (currentText && currentText !== lastProcessedTextRef.current) {
+    if (currentText && editor) {
       try {
-        lastProcessedTextRef.current = currentText;
+        // 防止递归更新
+        if (isUserEditingRef.current) return;
         
-        // 处理文本
-        let processedText = currentText.trim();
+        // 保存当前光标位置和滚动位置
+        const savedSelection = editor.selection ? { ...editor.selection } : null;
+        const domNode = ReactEditor.toDOMNode(editor, editor);
+        const savedScrollTop = domNode.scrollTop;
         
-        // 处理Minecraft/MiniMessage格式
-        if (isMinimessage && (processedText.includes('<color:') || processedText.includes('<bold>'))) {
-          processedText = processedText.replace(/<newline>\n/g, '\n');
-        } else {
-          processedText = processedText.replace(/§([0-9a-fk-or]|#[0-9A-Fa-f]{6})/g, '&$1');
+        // 简化文本处理逻辑 - 不再添加零宽空格
+        let textToImport = currentText;
+        
+        // 处理MiniMessage换行标记
+        if (textToImport.includes('<newline>')) {
+          textToImport = textToImport.replace(/<newline>\n?/g, '\n');
         }
         
-        // 分割文本为行
-        const textLines = processedText.split('\n')
-          .map(line => line.trim())
-          .filter(line => line.length > 0);
+        // 预处理格式代码 - 不添加零宽空格，而是标准化格式
+        // 将连续的相同格式代码合并为一个
+        textToImport = textToImport.replace(/(&|\§)([0-9a-fklmnor])((?:&|\§)\2)+/g, '$1$2');
         
-        // 创建新的编辑器内容
-        const newValue = textLines.map(line => ({
-          type: 'paragraph',
-          children: [{ text: line }]
+        // 处理十六进制颜色代码
+        textToImport = textToImport.replace(/(&|\§)(#[0-9A-Fa-f]{6})/g, '$1$2');
+        
+        // 将文本分割成行
+        const lines = textToImport.split('\n');
+        
+        // 创建新的编辑器内容 - 每行都是独立的对象
+        // 这有助于Slate更好地处理大量格式代码
+        const newValue: Descendant[] = lines.map(line => ({
+          type: 'paragraph' as const,
+          children: [{ text: line }],
         }));
         
-        // 如果没有有效行，添加一个空行
+        // 确保至少有一行
         if (newValue.length === 0) {
           newValue.push({
-            type: 'paragraph',
-            children: [{ text: '' }]
+            type: 'paragraph' as const,
+            children: [{ text: '' }],
           });
         }
         
-        // 完全重置编辑器内容
-        editor.children = newValue;
-        editor.onChange();
-        
-        // 重要修复：重置选择状态到安全位置
-        // 只选中第一行的开头，避免尝试选择不存在的行
-        editor.selection = {
-          anchor: { path: [0, 0], offset: 0 },
-          focus: { path: [0, 0], offset: 0 }
-        };
-        
-        // 通知Slate编辑器更新
+        // 使用异步更新避免DOM争用
         setTimeout(() => {
-          editor.onChange();
+          try {
+            // 设置编辑器内容前清空现有内容
+            editor.children = [];
+            editor.onChange();
+            
+            // 再次延迟设置新内容，让Slate有时间处理清空操作
+            setTimeout(() => {
+              try {
+                // 更新编辑器内容
+                editor.children = newValue;
+                editor.onChange();
+                
+                // 设置光标到安全位置
+                setTimeout(() => {
+                  try {
+                    // 简化光标设置逻辑 - 总是设置到第一行开头
+                    // 这种方法虽然不会保留原来的光标位置，但能确保不会出错
+                    Transforms.select(editor, { path: [0, 0], offset: 0 });
+                    
+                    // 恢复滚动位置
+                    if (domNode) {
+                      domNode.scrollTop = savedScrollTop;
+                    }
+                  } catch (error) {
+                    console.error('设置光标位置时出错:', error);
+                  }
+                }, 5);
+              } catch (error) {
+                console.error('设置编辑器内容时出错:', error);
+              }
+            }, 5);
+          } catch (error) {
+            console.error('清空编辑器内容时出错:', error);
+          }
         }, 0);
       } catch (error) {
-        console.error('更新编辑器内容时出错:', error);
+        console.error('导入文本到编辑器失败:', error);
       }
     }
-  }, [currentText, isMinimessage, editor]);
+  }, [currentText, editor, isMinimessage]);
 
   return (
     <Slate 

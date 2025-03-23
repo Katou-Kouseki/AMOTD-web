@@ -167,58 +167,35 @@ function convertRGBToMinecraftColor(hexColor: string): string {
   return closestColor.code;
 }
 
-// 修改cleanupMotdText函数，使用通用正则表达式处理重复字符
+// 修改cleanupMotdText函数，减少对换行的干扰
 function cleanupMotdText(text: string, isMinimessage = false): string {
-  // 先进行基本的清理
-  let cleaned = text;
+  // 先保存所有换行符为特殊标记
+  let cleaned = text.replace(/\n/g, '##NEWLINE##');
   
-  // MiniMessage格式的清理
-  if (isMinimessage) {
-    // 清理重复的标签
-    cleaned = cleaned.replace(/<\/?(color|gradient)[^>]*>/g, (match) => {
-      return match.replace(/\s+/g, '');
-    });
-    
-    // 使用通用正则表达式清理文本中的重复字符
-    cleaned = cleaned
-      .replace(/([^\s<>])\1+/g, '$1')            // 连续重复字符替换为单个字符
-      .replace(/([^\s<>])(\s+\1)+/g, '$1$2')     // "字 字 字" 模式替换为 "字 "
-      .replace(/([^\s<>]+)(\s+\1)+/g, '$1$2');   // "公益 公益" 模式替换为 "公益 "
-  } else {
-    // Minecraft格式清理 - 同样使用通用正则表达式
-    cleaned = cleaned
-      .replace(/(\§l)+/g, '§l')                  // 重复的格式代码替换为单个
-      .replace(/([^\s§])\1+/g, '$1')             // 连续重复字符替换为单个
-      .replace(/([^\s§])(\s+\1)+/g, '$1$2')      // "字 字 字" 模式替换为 "字 "
-      .replace(/([^\s§]+)(\s+\1)+/g, '$1$2');    // 重复词语替换为单个
-    
-    // 新增：处理乱码空格 - 替换不可打印字符和特殊Unicode空格为正常空格
-    cleaned = cleaned
-      .replace(/[\x00-\x1F\x7F-\x9F]/g, '') 
-      .replace(/[\u00A0\u2000-\u200F\u2028-\u202F\u205F\u3000]/g, ' ') 
-      .replace(/\s{3,}/g, '  '); 
-    
-    // 确保换行格式一致
-    if (cleaned.includes('\n')) {
-      // 保留现有换行，不做处理
-    } else if (cleaned.includes('§7公')) {
-      // 只在"公"前插入换行，且确保这是第二行的开始
-      const breakPos = cleaned.indexOf('§7公');
-      if (breakPos > 5) { // 确保不是在文本开头就换行
-        cleaned = cleaned.substring(0, breakPos) + '\n' + cleaned.substring(breakPos);
-      }
-    }
-    
-    // 转换§为&，为编辑器准备
-    cleaned = cleaned.replace(/§/g, '&');
-  }
+  // 临时替换格式代码
+  cleaned = cleaned.replace(/§([0-9a-fklmnor]|#[0-9A-Fa-f]{6})/g, '##FORMAT##$1');
+  
+  // 处理重复字符逻辑保持不变
+  cleaned = cleaned
+    // 处理重复字符的正则表达式...
+    .replace(/([^\s#])\1+/g, '$1')
+    .replace(/(\S+)(\S)\s+\2+/g, '$1$2')
+    .replace(/(\S{2,})\s+\1/g, '$1')
+    .replace(/(\S)(\s+\1)+/g, '$1$2')
+    .replace(/\s{2,}/g, ' ');
+  
+  // 恢复格式代码
+  cleaned = cleaned.replace(/##FORMAT##([0-9a-fklmnor]|#[0-9A-Fa-f]{6})/g, '§$1');
+  
+  // 恢复换行符
+  cleaned = cleaned.replace(/##NEWLINE##/g, '\n');
   
   return cleaned;
 }
 
-// 提取 Minecraft 格式文本
+// 修改extractMinecraftFormat函数，确保正确提取换行
 function extractMinecraftFormat(description: MCTextComponent, convertRGB: boolean = false): string {
-  // 处理纯文本情况
+  // 如果是纯文本，直接返回
   if (typeof description === 'string') {
     return description;
   }
@@ -226,127 +203,50 @@ function extractMinecraftFormat(description: MCTextComponent, convertRGB: boolea
   // 获取基础文本
   let result = description.text || '';
   
-  // 检查组件类型
-  const isHexColorMotd = description.extra && 
-                         description.extra.some(comp => 
-                           comp.color && typeof comp.color === 'string' && comp.color.startsWith('#'));
-
-  // 处理嵌套的文本组件
-  if (description.extra && Array.isArray(description.extra)) {
-    // 记录上一个格式状态
-    let lastColor = '';
-    let lastBold = false;
-    let lastItalic = false;
+  // 如果没有extra属性，直接返回文本
+  if (!description.extra || !Array.isArray(description.extra)) {
+    return result;
+  }
+  
+  // 遍历所有组件，正确处理换行
+  for (const component of description.extra) {
+    // 为每个组件创建格式前缀
+    let prefix = '';
     
-    // 特殊处理使用十六进制颜色代码的MOTD
-    if (isHexColorMotd) {
-      for (const component of description.extra) {
-        let componentText = '';
-        
-        // 处理颜色代码 - 支持十六进制
-        if (component.color && typeof component.color === 'string') {
-          if (component.color.startsWith('#')) {
-            if (convertRGB) {
-              // 转换RGB为标准Minecraft颜色
-              const colorCode = convertRGBToMinecraftColor(component.color);
-              componentText += '§' + colorCode;
-            } else {
-              // 保留RGB颜色代码
-              componentText += '§' + component.color;
-            }
-          } else {
-            // 处理命名颜色
-            const colorCode = getMinecraftColorCode(component.color);
-            if (colorCode) {
-              componentText += '§' + colorCode;
-            }
+    // 处理颜色
+    if (component.color) {
+      if (typeof component.color === 'string') {
+        if (component.color.startsWith('#')) {
+          const colorCode = convertRGB ? convertRGBToMinecraftColor(component.color) : component.color;
+          prefix += '§' + colorCode;
+        } else {
+          const mcColorCode = getMinecraftColorCode(component.color);
+          if (mcColorCode) {
+            prefix += '§' + mcColorCode;
           }
-        }
-        
-        // 处理加粗等格式 - 只在状态变更时添加
-        if (component.bold && !lastBold) {
-          componentText += '§l';
-          lastBold = true;
-        }
-        
-        if (component.italic && !lastItalic) {
-          componentText += '§o';
-          lastItalic = true;
-        }
-        
-        // 添加文本内容
-        if (typeof component.text === 'string') {
-          componentText += component.text;
-        } else if (component.text !== undefined) {
-          componentText += String(component.text);
-        }
-        
-        // 处理嵌套组件
-        if (component.extra && Array.isArray(component.extra)) {
-          componentText += extractMinecraftFormat(component, convertRGB);
-        }
-        
-        // 添加到结果
-        result += componentText;
-        
-        // 重置格式 - 如果有reset标记
-        if (component.reset) {
-          lastBold = false;
-          lastItalic = false;
-        }
-      }
-    } 
-    // 标准格式处理
-    else {
-      // 现有代码保持不变...
-      for (const component of description.extra) {
-        // 忽略空组件
-        if (!component.text && !component.extra) continue;
-        
-        let componentText = '';
-        let addedFormatting = false;
-        
-        // 优化：只在格式变化时才添加格式代码
-        if (component.color && component.color !== lastColor) {
-          const colorCode = getMinecraftColorCode(component.color);
-          if (colorCode) {
-            componentText += '§' + colorCode;
-            addedFormatting = true;
-            lastColor = component.color;
-          }
-        }
-        
-        // 处理文本内容，避免重复字符
-        if (typeof component.text === 'string') {
-          componentText += component.text;
-        } else if (component.text !== undefined) {
-          componentText += String(component.text);
-        }
-        
-        // 递归处理嵌套组件
-        if (component.extra && Array.isArray(component.extra)) {
-          const nestedText = extractMinecraftFormat(component, convertRGB);
-          if (nestedText) {
-            componentText += nestedText;
-          }
-        }
-        
-        // 添加到结果，但避免添加空组件
-        if (componentText) {
-          result += componentText;
         }
       }
     }
     
-    // 处理可能的重复空格问题
-    result = result.replace(/\s{3,}/g, '  '); // 将3个以上连续空格替换为2个
+    // 处理格式
+    if (component.bold) prefix += '§l';
+    if (component.italic) prefix += '§o';
+    if (component.underlined) prefix += '§n';
+    if (component.strikethrough) prefix += '§m';
+    if (component.obfuscated) prefix += '§k';
     
-    // 处理重复的格式代码
-    result = result.replace(/(?:§l){2,}/g, '§l'); // 替换连续的粗体代码
-    result = result.replace(/(?:§o){2,}/g, '§o'); // 替换连续的斜体代码
+    // 获取组件文本
+    let componentText = '';
     
-    // 智能处理空格和双字问题
-    result = result.replace(/(\S)\1(\S)\2/g, '$1$2'); // 修复"公公益益"这样的问题
+    // 如果组件有自己的嵌套组件，递归处理
+    if (component.extra && Array.isArray(component.extra)) {
+      componentText = extractMinecraftFormat(component, convertRGB);
+    } else {
+      componentText = component.text || '';
+    }
+    
+    // 将前缀与文本合并
+    result += prefix + componentText;
   }
   
   return result;
@@ -426,19 +326,77 @@ export async function POST(request: NextRequest) {
       PROTOCOLS['1.8.9']   // 旧版本
     ];
     
-    // 尝试不同协议版本
-    for (const protocol of protocolsToTry) {
-      try {
-        const result = await fetchMOTD(host, port, protocol, format);
-        return NextResponse.json(result);
-      } catch (err: unknown) { // 指定类型为unknown
-        console.log(`协议版本 ${protocol} 失败, 尝试下一个...`, 
-          err instanceof Error ? err.message : String(err));
-        // 继续尝试下一个协议
-      }
-    }
+    // 存储所有socket和timeout引用
+    const resources = [];
     
-    throw new Error('所有协议版本均连接失败');
+    // 创建一个可取消的Promise工厂函数
+    const createCancellableMotdRequest = (protocol) => {
+      let cancel;
+      
+      const promise = new Promise((resolve, reject) => {
+        cancel = () => {
+          reject(new Error('请求已取消'));
+        };
+        
+        fetchMOTD(host, port, protocol, format, resources)
+          .then(resolve)
+          .catch(reject);
+      });
+      
+      return { promise, cancel };
+    };
+    
+    // 创建所有协议版本的请求
+    const requests = protocolsToTry.map(protocol => {
+      const request = createCancellableMotdRequest(protocol);
+      return {
+        protocol,
+        ...request
+      };
+    });
+    
+    // 使用Promise.race并行处理所有请求
+    try {
+      // 设置全局超时 - 5秒
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('所有协议尝试超时'));
+        }, 5000);
+      });
+      
+      // 等待第一个成功的请求或超时
+      const result = await Promise.race([
+        ...requests.map(req => req.promise),
+        timeoutPromise
+      ]);
+      
+      // 取消所有其他请求
+      requests.forEach(req => req.cancel());
+      
+      // 清理所有资源
+      resources.forEach(res => {
+        if (res.socket && !res.socket.destroyed) {
+          res.socket.destroy();
+        }
+        if (res.timeout) {
+          clearTimeout(res.timeout);
+        }
+      });
+      
+      return NextResponse.json(result);
+    } catch (error) {
+      // 清理所有资源
+      resources.forEach(res => {
+        if (res.socket && !res.socket.destroyed) {
+          res.socket.destroy();
+        }
+        if (res.timeout) {
+          clearTimeout(res.timeout);
+        }
+      });
+      
+      throw error;
+    }
     
   } catch (error) {
     console.error('获取MOTD错误:', error);
@@ -448,18 +406,21 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function fetchMOTD(host: string, port: number, protocol: number, format: string = 'minecraft'): Promise<{
+async function fetchMOTD(host: string, port: number, protocol: number, format: string = 'minecraft', resources: Array<{socket: Socket, timeout: NodeJS.Timeout}>): Promise<{
   rawText: string;
   serverIcon: string | null;
 }> {
   return new Promise((resolve, reject) => {
     const socket = new Socket();
     
-    // 超时处理 - 增加到10秒
+    // 超时处理 - 减少到3秒
     const timeout = setTimeout(() => {
       socket.destroy();
-      reject(new Error('连接超时 - 请检查服务器地址和端口是否正确'));
-    }, 10000);
+      reject(new Error(`协议 ${protocol} 连接超时`));
+    }, 3000);
+    
+    // 添加到resources列表
+    resources.push({ socket, timeout });
     
     let responseData = Buffer.alloc(0);
     
