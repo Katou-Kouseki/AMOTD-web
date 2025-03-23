@@ -839,9 +839,38 @@ export default function Home() {
           setMotdText(originalText.replace(/§([0-9a-fklmnor]|#[0-9A-Fa-f]{6})/g, '&$1'));
         }
         
-        // 设置服务器图标
+        // 处理服务器图标 - 上传到服务器并获取URL
         if (data.serverIcon) {
-          setServerIcon(data.serverIcon);
+          try {
+            // 设置预览图标（使用base64数据）
+            setServerIcon(data.serverIcon);
+            
+            // 将base64图标转换为Blob并上传到服务器
+            const base64Data = data.serverIcon.split(',')[1];
+            const blob = await fetch(`data:image/png;base64,${base64Data}`).then(res => res.blob());
+            
+            // 创建FormData并上传
+            const formData = new FormData();
+            formData.append('file', blob, 'server_icon.png');
+            
+            const uploadResponse = await fetch('/api/upload-icon', {
+              method: 'POST',
+              body: formData
+            });
+            
+            const uploadResult = await uploadResponse.json();
+            
+            if (uploadResult.success) {
+              // 设置图标URL路径（而非base64数据）
+              setIconPath(uploadResult.fileUrl);
+              console.log('服务器图标已上传并设置URL:', uploadResult.fileUrl);
+            } else {
+              console.error('上传服务器图标失败:', uploadResult.error);
+            }
+          } catch (iconError) {
+            console.error('处理服务器图标时出错:', iconError);
+            // 预览仍然可以使用base64数据，但不设置iconPath
+          }
         }
       }
     } catch (error) {
