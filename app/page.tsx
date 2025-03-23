@@ -8,9 +8,20 @@ import { Descendant } from 'slate';
 interface FormattedSegment {
   text: string;
   color: string;
-  fontWeight?: string;
-  fontStyle?: string;
-  textDecoration?: string;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  strikethrough?: boolean;
+}
+
+// 添加类型守卫函数
+function isFormattedSegmentWithFormat(segment: FormattedSegment): segment is FormattedSegment & {
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  strikethrough: boolean;
+} {
+  return 'bold' in segment && 'italic' in segment && 'underline' in segment && 'strikethrough' in segment;
 }
 
 export default function Home() {
@@ -306,7 +317,7 @@ export default function Home() {
           }
           
           // 添加新的颜色标签
-          activeFormats.color = colorObj.hex || colorObj.color;
+          activeFormats.color = colorObj.color;
           result += `<color:${activeFormats.color}>`;
         }
         // 处理所有格式代码
@@ -410,12 +421,12 @@ export default function Home() {
     
     // 处理每一行
     const allLineSegments = lines.map(line => {
-      let currentSegments = [];
+      const currentSegments = [];
       let currentText = '';
       let i = 0;
       
       // 当前激活的格式
-      let activeFormats = {
+      const activeFormats = {
         bold: false,
         italic: false,
         underline: false,
@@ -532,7 +543,6 @@ export default function Home() {
         // 查找所有的渐变标签
         const gradientRegex = /<gradient:([^:]+):([^>]+)>([^<]*)<\/gradient>/g;
         let lastIndex = 0;
-        let modifiedLine = '';
         let match;
         
         // 创建混合段落数组，包含普通段落和HTML字符串
@@ -595,13 +605,15 @@ export default function Home() {
     }> = [];
     
     // 当前应用的格式
-    let currentColor = '#AAAAAA';
-    let currentFormats = {
+    const currentFormats = {
       bold: false,
       italic: false,
       underline: false,
       strikethrough: false
     };
+    
+    // 当前应用的颜色
+    let currentColor = '#AAAAAA';
     
     while (i < text.length) {
       // 查找标签开始
@@ -611,11 +623,10 @@ export default function Home() {
           segments.push({
             text: currentText,
             color: currentColor,
-            fontWeight: currentFormats.bold ? 'bold' : undefined,
-            fontStyle: currentFormats.italic ? 'italic' : undefined,
-            textDecoration: currentFormats.underline 
-              ? 'underline' 
-              : (currentFormats.strikethrough ? 'line-through' : undefined)
+            bold: currentFormats.bold,
+            italic: currentFormats.italic,
+            underline: currentFormats.underline,
+            strikethrough: currentFormats.strikethrough
           });
           currentText = '';
         }
@@ -702,11 +713,10 @@ export default function Home() {
       segments.push({
         text: currentText,
         color: currentColor,
-        fontWeight: currentFormats.bold ? 'bold' : undefined,
-        fontStyle: currentFormats.italic ? 'italic' : undefined,
-        textDecoration: currentFormats.underline 
-          ? 'underline' 
-          : (currentFormats.strikethrough ? 'line-through' : undefined)
+        bold: currentFormats.bold,
+        italic: currentFormats.italic,
+        underline: currentFormats.underline,
+        strikethrough: currentFormats.strikethrough
       });
     }
     
@@ -719,34 +729,12 @@ export default function Home() {
 
   // 辅助函数：创建渐变HTML
   const createGradientHtml = (text: string, startColor: string, endColor: string): string => {
-    // 生成唯一ID，防止冲突
-    const gradientId = `gradient-${Math.random().toString(36).substring(2, 9)}`;
-    
     // 清理颜色代码，确保它们是有效的CSS颜色
     const startClean = startColor.startsWith('#') ? startColor : `#${startColor}`;
     const endClean = endColor.startsWith('#') ? endColor : `#${endColor}`;
     
     // 创建SVG渐变文本
     return `<span style="background: linear-gradient(to right, ${startClean}, ${endClean}); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: bold;">${text}</span>`;
-  };
-
-  // 添加计算渲染文本长度并自动换行的函数
-  const calculateTextWidth = (text: string, isFormatted: boolean = false): number => {
-    // 去除格式代码后计算实际可见文本长度
-    let visibleText = text;
-    
-    if (isFormatted) {
-      // 去除所有格式代码
-      visibleText = text.replace(/(&|\§)([0-9a-fklmnor]|#[0-9A-Fa-f]{6})/g, '');
-      // 去除MiniMessage标签
-      visibleText = visibleText.replace(/<[^>]+>/g, '');
-    }
-    
-    // 简单计算长度 - 可以根据字体特性进行更精确计算
-    // 英文字符长度为1，中文字符长度为2
-    return Array.from(visibleText).reduce((length, char) => {
-      return length + (/[\u4e00-\u9fa5]/.test(char) ? 2 : 1);
-    }, 0);
   };
 
   // 修改handleEditorChange函数，移除自动换行逻辑
@@ -756,38 +744,6 @@ export default function Home() {
     
     console.log('编辑器内容已更新:', new Date().getTime());
   }, []);
-
-  const cleanupRepeatedText = (text: string): string => {
-    if (!text) return '';
-    
-    // 临时替换格式代码，避免干扰正则匹配
-    let cleaned = text.replace(/(&|\§)([0-9a-fk-or]|#[0-9A-Fa-f]{6})/g, '##FORMAT##$2');
-    
-    // 处理多种重复模式
-    cleaned = cleaned
-      // 1. 连续重复字符
-      .replace(/([^\s#])\1+/g, '$1')
-      
-      // 2. 处理"词语末字 末字"模式 (如"公益 益")
-      .replace(/(\S+)(\S)\s+\2+/g, '$1$2')
-      
-      // 3. 处理完全相同词语重复 (如"公益 公益")
-      .replace(/(\S{2,})\s+\1/g, '$1')
-      
-      // 4. 处理单字空格重复 (如"字 字 字")
-      .replace(/(\S)(\s+\1)+/g, '$1$2')
-      
-      // 5. 处理末尾词语或字符的重复
-      .replace(/(\S+)(\s+\S+)+\s+\1$/g, '$1')
-      
-      // 6. 处理多余空格
-      .replace(/\s{2,}/g, ' ');
-    
-    // 恢复格式代码
-    cleaned = cleaned.replace(/##FORMAT##([0-9a-fk-or]|#[0-9A-Fa-f]{6})/g, '&$1');
-    
-    return cleaned;
-  };
 
   const fetchServerMOTD = async () => {
     if (!serverIP) return;
@@ -824,7 +780,7 @@ export default function Home() {
         const hasGradient = detectGradient(originalText);
         
         // 根据检测结果决定使用哪种格式
-        let finalFormat = hasGradient ? 'minimessage' : fetchFormat;
+        const finalFormat = hasGradient ? 'minimessage' : fetchFormat;
         
         // 设置格式状态
         setIsMinimessage(finalFormat === 'minimessage');
@@ -1134,9 +1090,11 @@ export default function Home() {
                                 key={`${lineIndex}-${segmentIndex}`} 
                                 style={{ 
                                   color: segment.color,
-                                  fontWeight: segment.fontWeight || 'normal',
-                                  fontStyle: segment.fontStyle || 'normal',
-                                  textDecoration: segment.textDecoration || 'none'
+                                  fontWeight: isFormattedSegmentWithFormat(segment) ? segment.bold ? 'bold' : 'normal' : 'normal',
+                                  fontStyle: isFormattedSegmentWithFormat(segment) ? segment.italic ? 'italic' : 'normal' : 'normal',
+                                  textDecoration: isFormattedSegmentWithFormat(segment) ? 
+                                    `${segment.underline ? 'underline' : ''} ${segment.strikethrough ? 'line-through' : ''}`.trim() || 'none'
+                                    : 'none'
                                 }}
                               >
                                 {segment.text}
@@ -1154,9 +1112,11 @@ export default function Home() {
                               key={`${lineIndex}-${segmentIndex}`} 
                               style={{ 
                                 color: segment.color,
-                                fontWeight: segment.fontWeight || 'normal',
-                                fontStyle: segment.fontStyle || 'normal',
-                                textDecoration: segment.textDecoration || 'none'
+                                fontWeight: isFormattedSegmentWithFormat(segment) ? segment.bold ? 'bold' : 'normal' : 'normal',
+                                fontStyle: isFormattedSegmentWithFormat(segment) ? segment.italic ? 'italic' : 'normal' : 'normal',
+                                textDecoration: isFormattedSegmentWithFormat(segment) ? 
+                                  `${segment.underline ? 'underline' : ''} ${segment.strikethrough ? 'line-through' : ''}`.trim() || 'none'
+                                  : 'none'
                               }}
                             >
                               {segment.text}

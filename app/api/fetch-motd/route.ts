@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Socket } from 'net';
 
+// 增加接口定义
+interface ResourceItem {
+  socket: Socket;
+  timeout: NodeJS.Timeout;
+}
+
 // 增加类型定义
 interface MCTextComponent {
   text?: string;
@@ -12,6 +18,12 @@ interface MCTextComponent {
   obfuscated?: boolean;
   extra?: MCTextComponent[];
   [key: string]: unknown; // 将any改为unknown更安全
+}
+
+// 在文件顶部添加或使用已有的结果类型定义
+interface MotdResult {
+  rawText: string;
+  serverIcon: string | null;
 }
 
 // 更新支持的协议版本
@@ -167,17 +179,16 @@ function convertRGBToMinecraftColor(hexColor: string): string {
   return closestColor.code;
 }
 
-// 修改cleanupMotdText函数，减少对换行的干扰
-function cleanupMotdText(text: string, isMinimessage = false): string {
+// 修改cleanupMotdText函数，解决"isMinimessage"参数未使用的警告
+function cleanupMotdText(text: string): string {
   // 先保存所有换行符为特殊标记
   let cleaned = text.replace(/\n/g, '##NEWLINE##');
   
   // 临时替换格式代码
   cleaned = cleaned.replace(/§([0-9a-fklmnor]|#[0-9A-Fa-f]{6})/g, '##FORMAT##$1');
   
-  // 处理重复字符逻辑保持不变
+  // 处理重复字符
   cleaned = cleaned
-    // 处理重复字符的正则表达式...
     .replace(/([^\s#])\1+/g, '$1')
     .replace(/(\S+)(\S)\s+\2+/g, '$1$2')
     .replace(/(\S{2,})\s+\1/g, '$1')
@@ -299,114 +310,14 @@ function extractMiniMessageFormat(description: MCTextComponent): string {
   return result;
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const data = await request.json();
-    const { serverIP, format = 'minecraft' } = data;
-    
-    if (!serverIP) {
-      return NextResponse.json({ error: '服务器IP不能为空' }, { status: 400 });
-    }
-    
-    // 解析IP和端口
-    let host = serverIP;
-    let port = 25565; // 默认端口
-    
-    if (serverIP.includes(':')) {
-      const parts = serverIP.split(':');
-      host = parts[0];
-      port = parseInt(parts[1], 10) || 25565;
-    }
-    
-    // 修改尝试的协议版本顺序
-    const protocolsToTry = [
-      PROTOCOLS['1.21.4'], // 最新版本
-      PROTOCOLS['1.20.5'], // 较新版本
-      PROTOCOLS['1.16.5'], // 中间版本
-      PROTOCOLS['1.8.9']   // 旧版本
-    ];
-    
-    // 存储所有socket和timeout引用
-    const resources = [];
-    
-    // 创建一个可取消的Promise工厂函数
-    const createCancellableMotdRequest = (protocol) => {
-      let cancel;
-      
-      const promise = new Promise((resolve, reject) => {
-        cancel = () => {
-          reject(new Error('请求已取消'));
-        };
-        
-        fetchMOTD(host, port, protocol, format, resources)
-          .then(resolve)
-          .catch(reject);
-      });
-      
-      return { promise, cancel };
-    };
-    
-    // 创建所有协议版本的请求
-    const requests = protocolsToTry.map(protocol => {
-      const request = createCancellableMotdRequest(protocol);
-      return {
-        protocol,
-        ...request
-      };
-    });
-    
-    // 使用Promise.race并行处理所有请求
-    try {
-      // 设置全局超时 - 5秒
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-          reject(new Error('所有协议尝试超时'));
-        }, 5000);
-      });
-      
-      // 等待第一个成功的请求或超时
-      const result = await Promise.race([
-        ...requests.map(req => req.promise),
-        timeoutPromise
-      ]);
-      
-      // 取消所有其他请求
-      requests.forEach(req => req.cancel());
-      
-      // 清理所有资源
-      resources.forEach(res => {
-        if (res.socket && !res.socket.destroyed) {
-          res.socket.destroy();
-        }
-        if (res.timeout) {
-          clearTimeout(res.timeout);
-        }
-      });
-      
-      return NextResponse.json(result);
-    } catch (error) {
-      // 清理所有资源
-      resources.forEach(res => {
-        if (res.socket && !res.socket.destroyed) {
-          res.socket.destroy();
-        }
-        if (res.timeout) {
-          clearTimeout(res.timeout);
-        }
-      });
-      
-      throw error;
-    }
-    
-  } catch (error) {
-    console.error('获取MOTD错误:', error);
-    return NextResponse.json({ 
-      error: '获取MOTD失败: ' + (error instanceof Error ? error.message : '未知错误')
-    }, { status: 500 });
-  }
-}
-
-async function fetchMOTD(host: string, port: number, protocol: number, format: string = 'minecraft', resources: Array<{socket: Socket, timeout: NodeJS.Timeout}>): Promise<{
+// 修改fetchMOTD函数定义
+async function fetchMOTD(
+  host: string, 
+  port: number, 
+  protocol: number, 
+  format: string = 'minecraft', 
+  resources: ResourceItem[]
+): Promise<{
   rawText: string;
   serverIcon: string | null;
 }> {
@@ -505,7 +416,7 @@ async function fetchMOTD(host: string, port: number, protocol: number, format: s
                   // 根据请求的格式进行适当转换
                   if (format === 'minecraft') {
                     // 对于Minecraft格式，转换RGB为标准Minecraft颜色
-                    result.rawText = cleanupMotdText(formattedText || result.rawText, false);
+                    result.rawText = cleanupMotdText(formattedText || result.rawText);
                   } else {
                     // 对于MiniMessage格式，保留RGB颜色
                     const miniMessageText = extractMiniMessageFormat(response.description);
@@ -561,4 +472,117 @@ async function fetchMOTD(host: string, port: number, protocol: number, format: s
     
     socket.connect(port, host);
   });
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const data = await request.json();
+    const { serverIP, format = 'minecraft' } = data;
+    
+    if (!serverIP) {
+      return NextResponse.json({ error: '服务器IP不能为空' }, { status: 400 });
+    }
+    
+    // 解析IP和端口
+    let host = serverIP;
+    let port = 25565; // 默认端口
+    
+    if (serverIP.includes(':')) {
+      const parts = serverIP.split(':');
+      host = parts[0];
+      port = parseInt(parts[1], 10) || 25565;
+    }
+    
+    // 修改尝试的协议版本顺序
+    const protocolsToTry = [
+      PROTOCOLS['1.21.4'], // 最新版本
+      PROTOCOLS['1.20.5'], // 较新版本
+      PROTOCOLS['1.16.5'], // 中间版本
+      PROTOCOLS['1.8.9']   // 旧版本
+    ];
+    
+    // 修复：指定resources的类型
+    const resources: ResourceItem[] = [];
+    
+    // 修复：给protocol参数添加类型并修复cancel变量问题
+    const createCancellableMotdRequest = (protocol: number) => {
+      // 初始化cancel函数
+      let cancel = () => {};
+      
+      // 使用明确的MotdResult类型替代Record<string, any>
+      const promise = new Promise<MotdResult>((resolve, reject) => {
+        cancel = () => {
+          reject(new Error('请求已取消'));
+        };
+        
+        fetchMOTD(host, port, protocol, format, resources)
+          .then(resolve)
+          .catch(reject);
+      });
+      
+      return { promise, cancel };
+    };
+    
+    // 创建所有协议版本的请求
+    const requests = protocolsToTry.map(protocol => {
+      const request = createCancellableMotdRequest(protocol);
+      return {
+        protocol,
+        ...request
+      };
+    });
+    
+    // 使用Promise.race并行处理所有请求
+    try {
+      // 设置全局超时 - 5秒
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('所有协议尝试超时'));
+        }, 5000);
+      });
+      
+      // 等待第一个成功的请求或超时
+      const result = await Promise.race([
+        ...requests.map(req => req.promise),
+        timeoutPromise
+      ]);
+      
+      // 修复：确保cancel方法存在
+      requests.forEach(req => {
+        if (req && typeof req.cancel === 'function') {
+          req.cancel();
+        }
+      });
+      
+      // 清理所有资源
+      resources.forEach(res => {
+        if (res.socket && !res.socket.destroyed) {
+          res.socket.destroy();
+        }
+        if (res.timeout) {
+          clearTimeout(res.timeout);
+        }
+      });
+      
+      return NextResponse.json(result);
+    } catch (error) {
+      // 清理所有资源
+      resources.forEach(res => {
+        if (res.socket && !res.socket.destroyed) {
+          res.socket.destroy();
+        }
+        if (res.timeout) {
+          clearTimeout(res.timeout);
+        }
+      });
+      
+      throw error;
+    }
+    
+  } catch (error) {
+    console.error('获取MOTD错误:', error);
+    return NextResponse.json({ 
+      error: '获取MOTD失败: ' + (error instanceof Error ? error.message : '未知错误')
+    }, { status: 500 });
+  }
 } 

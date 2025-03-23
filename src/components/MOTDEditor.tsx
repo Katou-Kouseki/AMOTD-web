@@ -18,23 +18,23 @@ declare module 'slate' {
   }
 }
 
-export const MC_COLORS = [
-  { code: '0', name: '黑色', color: '#000000' },
-  { code: '1', name: '深蓝色', color: '#0000AA' },
-  { code: '2', name: '深绿色', color: '#00AA00' },
-  { code: '3', name: '深青色', color: '#00AAAA' },
-  { code: '4', name: '深红色', color: '#AA0000' },
-  { code: '5', name: '紫色', color: '#AA00AA' },
-  { code: '6', name: '金色', color: '#FFAA00' },
-  { code: '7', name: '灰色', color: '#AAAAAA' },
-  { code: '8', name: '深灰色', color: '#555555' },
-  { code: '9', name: '蓝色', color: '#5555FF' },
-  { code: 'a', name: '绿色', color: '#55FF55' },
-  { code: 'b', name: '青色', color: '#55FFFF' },
-  { code: 'c', name: '红色', color: '#FF5555' },
-  { code: 'd', name: '粉色', color: '#FF55FF' },
-  { code: 'e', name: '黄色', color: '#FFFF55' },
-  { code: 'f', name: '白色', color: '#FFFFFF' }
+export const MC_COLORS: Array<{ code: string; name: string; color: string; hex?: string }> = [
+  { code: '0', name: 'black', color: '#000000', hex: '#000000' },
+  { code: '1', name: 'dark_blue', color: '#0000AA', hex: '#0000AA' },
+  { code: '2', name: 'dark_green', color: '#00AA00', hex: '#00AA00' },
+  { code: '3', name: 'dark_aqua', color: '#00AAAA', hex: '#00AAAA' },
+  { code: '4', name: 'dark_red', color: '#AA0000', hex: '#AA0000' },
+  { code: '5', name: 'dark_purple', color: '#AA00AA', hex: '#AA00AA' },
+  { code: '6', name: 'gold', color: '#FFAA00', hex: '#FFAA00' },
+  { code: '7', name: 'gray', color: '#AAAAAA', hex: '#AAAAAA' },
+  { code: '8', name: 'dark_gray', color: '#555555', hex: '#555555' },
+  { code: '9', name: 'blue', color: '#5555FF', hex: '#5555FF' },
+  { code: 'a', name: 'green', color: '#55FF55', hex: '#55FF55' },
+  { code: 'b', name: 'aqua', color: '#55FFFF', hex: '#55FFFF' },
+  { code: 'c', name: 'red', color: '#FF5555', hex: '#FF5555' },
+  { code: 'd', name: 'light_purple', color: '#FF55FF', hex: '#FF55FF' },
+  { code: 'e', name: 'yellow', color: '#FFFF55', hex: '#FFFF55' },
+  { code: 'f', name: 'white', color: '#FFFFFF', hex: '#FFFFFF' }
 ].sort((a, b) => a.code.localeCompare(b.code));
 
 // 为组件的props添加类型定义
@@ -80,12 +80,7 @@ export default function MOTDEditor({
         // 防止递归更新
         if (isUserEditingRef.current) return;
         
-        // 保存当前光标位置和滚动位置
-        const savedSelection = editor.selection ? { ...editor.selection } : null;
-        const domNode = ReactEditor.toDOMNode(editor, editor);
-        const savedScrollTop = domNode.scrollTop;
-        
-        // 简化文本处理逻辑 - 不再添加零宽空格
+        // 处理文本
         let textToImport = currentText;
         
         // 处理MiniMessage换行标记
@@ -93,24 +88,16 @@ export default function MOTDEditor({
           textToImport = textToImport.replace(/<newline>\n?/g, '\n');
         }
         
-        // 预处理格式代码 - 不添加零宽空格，而是标准化格式
-        // 将连续的相同格式代码合并为一个
-        textToImport = textToImport.replace(/(&|\§)([0-9a-fklmnor])((?:&|\§)\2)+/g, '$1$2');
-        
-        // 处理十六进制颜色代码
-        textToImport = textToImport.replace(/(&|\§)(#[0-9A-Fa-f]{6})/g, '$1$2');
-        
         // 将文本分割成行
         const lines = textToImport.split('\n');
         
-        // 创建新的编辑器内容 - 每行都是独立的对象
-        // 这有助于Slate更好地处理大量格式代码
+        // 创建新的编辑器内容
         const newValue: Descendant[] = lines.map(line => ({
           type: 'paragraph' as const,
           children: [{ text: line }],
         }));
         
-        // 确保至少有一行
+        // 关键修复：确保编辑器至少有一个空节点
         if (newValue.length === 0) {
           newValue.push({
             type: 'paragraph' as const,
@@ -118,41 +105,20 @@ export default function MOTDEditor({
           });
         }
         
-        // 使用异步更新避免DOM争用
+        // 更新编辑器内容
+        editor.children = newValue;
+        
+        // 确保更新后再设置选区
         setTimeout(() => {
           try {
-            // 设置编辑器内容前清空现有内容
-            editor.children = [];
+            // 确保编辑器有内容后再设置选区
+            if (editor.children.length > 0) {
+              Transforms.select(editor, { path: [0, 0], offset: 0 });
+            }
+            // 更新编辑器状态
             editor.onChange();
-            
-            // 再次延迟设置新内容，让Slate有时间处理清空操作
-            setTimeout(() => {
-              try {
-                // 更新编辑器内容
-                editor.children = newValue;
-                editor.onChange();
-                
-                // 设置光标到安全位置
-                setTimeout(() => {
-                  try {
-                    // 简化光标设置逻辑 - 总是设置到第一行开头
-                    // 这种方法虽然不会保留原来的光标位置，但能确保不会出错
-                    Transforms.select(editor, { path: [0, 0], offset: 0 });
-                    
-                    // 恢复滚动位置
-                    if (domNode) {
-                      domNode.scrollTop = savedScrollTop;
-                    }
-                  } catch (error) {
-                    console.error('设置光标位置时出错:', error);
-                  }
-                }, 5);
-              } catch (error) {
-                console.error('设置编辑器内容时出错:', error);
-              }
-            }, 5);
           } catch (error) {
-            console.error('清空编辑器内容时出错:', error);
+            console.error('设置编辑器选区时出错:', error);
           }
         }, 0);
       } catch (error) {
