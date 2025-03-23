@@ -71,44 +71,65 @@ export default function MOTDEditor({
   const isUserEditingRef = useRef(false);
   
   // 添加上一次外部文本记录
-  const lastExternalTextRef = useRef(currentText);
-  
-  // 添加上一次内部生成的文本记录
-  const lastInternalTextRef = useRef('');
+  const lastProcessedTextRef = useRef(currentText);
   
   // 修改useEffect，只有当确定为外部更新时才更新编辑器
   useEffect(() => {
-    // 只有当不是用户编辑且文本真的变化时才更新
-    if (!isUserEditingRef.current && 
-        currentText !== lastExternalTextRef.current &&
-        currentText !== lastInternalTextRef.current) {
-      
-      lastExternalTextRef.current = currentText;
-      
+    // 只有当有新的外部文本时才处理
+    if (currentText && currentText !== lastProcessedTextRef.current) {
       try {
-        // 处理文本 - 代码基本不变
+        lastProcessedTextRef.current = currentText;
+        
+        // 处理文本
         let processedText = currentText.trim();
-        processedText = processedText.replace(/§([0-9a-fk-or]|#[0-9A-Fa-f]{6})/g, '&$1');
-        processedText = processedText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        
+        // 处理Minecraft/MiniMessage格式
+        if (isMinimessage && (processedText.includes('<color:') || processedText.includes('<bold>'))) {
+          processedText = processedText.replace(/<newline>\n/g, '\n');
+        } else {
+          processedText = processedText.replace(/§([0-9a-fk-or]|#[0-9A-Fa-f]{6})/g, '&$1');
+        }
         
         // 分割文本为行
-        const textLines = processedText.split('\n');
+        const textLines = processedText.split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 0);
         
-        // 创建Slate节点
+        // 创建新的编辑器内容
         const newValue = textLines.map(line => ({
           type: 'paragraph',
           children: [{ text: line }]
         }));
         
-        // 由于这是外部更新，安全地替换编辑器内容
+        // 如果没有有效行，添加一个空行
+        if (newValue.length === 0) {
+          newValue.push({
+            type: 'paragraph',
+            children: [{ text: '' }]
+          });
+        }
+        
+        // 完全重置编辑器内容
         editor.children = newValue;
         editor.onChange();
+        
+        // 重要修复：重置选择状态到安全位置
+        // 只选中第一行的开头，避免尝试选择不存在的行
+        editor.selection = {
+          anchor: { path: [0, 0], offset: 0 },
+          focus: { path: [0, 0], offset: 0 }
+        };
+        
+        // 通知Slate编辑器更新
+        setTimeout(() => {
+          editor.onChange();
+        }, 0);
       } catch (error) {
         console.error('更新编辑器内容时出错:', error);
       }
     }
-  }, [currentText, editor]);
-  
+  }, [currentText, isMinimessage, editor]);
+
   return (
     <Slate 
       editor={editor} 
@@ -121,9 +142,6 @@ export default function MOTDEditor({
         const newText = value
           .map(n => Node.string(n))
           .join('\n');
-        
-        // 记录内部生成的文本
-        lastInternalTextRef.current = newText;
         
         // 调用外部onChange
         if (onChange) {

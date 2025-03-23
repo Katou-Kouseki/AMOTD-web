@@ -195,6 +195,319 @@ export default function Home() {
     return () => clearInterval(timer);
   }, []);
 
+  // 添加检测渐变色的辅助函数 - 放在现有辅助函数旁边
+  const detectGradient = (text: string): boolean => {
+    if (!text) return false;
+    
+    // 检查是否有连续的不同颜色代码，特别是相近颜色
+    const colorCodes = text.match(/§([0-9a-f]|#[0-9A-Fa-f]{6})/g) || [];
+    
+    // 如果颜色代码少于3个，不太可能是渐变色
+    if (colorCodes.length < 3) return false;
+    
+    // 检查连续字符是否有不同颜色代码（渐变色的特征）
+    for (let i = 0; i < colorCodes.length - 2; i++) {
+      // 如果有三个连续的不同颜色代码，且间距小于5个字符，很可能是渐变色
+      if (
+        colorCodes[i] !== colorCodes[i + 1] && 
+        colorCodes[i + 1] !== colorCodes[i + 2] &&
+        text.indexOf(colorCodes[i + 1]) - text.indexOf(colorCodes[i]) < 5 &&
+        text.indexOf(colorCodes[i + 2]) - text.indexOf(colorCodes[i + 1]) < 5
+      ) {
+        return true;
+      }
+    }
+    
+    // 检查是否有十六进制RGB颜色代码，这通常用于渐变色
+    if (text.includes('§#')) {
+      return true;
+    }
+    
+    return false;
+  };
+
+  // 改进convertMinecraftToMiniMessage函数，更好地处理渐变色
+  const convertMinecraftToMiniMessage = (text: string): string => {
+    if (!text) return '';
+    
+    // 处理重复字符问题
+    text = cleanupRepeatedText(text);
+    
+    // 将&符号替换回§符号(如果有的话)
+    text = text.replace(/&([0-9a-fk-or]|#[0-9A-Fa-f]{6})/g, '§$1');
+    
+    // 检测和处理渐变色
+    const segments = [];
+    let currentSegment = '';
+    let currentText = '';
+    
+    // 先找出所有可能的渐变段落
+    const gradientSegments = [];
+    let inGradient = false;
+    let gradientStart = -1;
+    let lastColorIndex = -1;
+    let lastColorCode = '';
+    
+    // 第一遍扫描：识别可能的渐变段落
+    for (let i = 0; i < text.length; i++) {
+      if (text[i] === '§' && i + 1 < text.length) {
+        const nextChar = text[i + 1];
+        if ('0123456789abcdef'.includes(nextChar) || nextChar === '#') {
+          // 这是一个颜色代码
+          if (!inGradient) {
+            // 开始一个新的可能的渐变段
+            inGradient = true;
+            gradientStart = i;
+          }
+          
+          // 如果距离上一个颜色代码很近（1-3个字符），且颜色不同，可能是渐变
+          if (lastColorIndex !== -1 && i - lastColorIndex < 8 && text.substring(i, i + 2) !== lastColorCode) {
+            // 增加这是渐变的可能性
+          }
+          
+          lastColorIndex = i;
+          lastColorCode = text.substring(i, i + 2);
+          i++; // 跳过颜色代码字符
+        } else if ("lmnopr".includes(nextChar)) {
+          // 这是一个格式代码，不影响渐变检测
+          i++;
+        } else {
+          // 不是有效的格式代码
+          if (inGradient && i - gradientStart > 10) {
+            // 如果已积累足够长的段落，记录为可能的渐变
+            gradientSegments.push({
+              start: gradientStart,
+              end: lastColorIndex + 2
+            });
+          }
+          inGradient = false;
+        }
+      } else if (inGradient && (text[i] === ' ' || text[i] === '\n')) {
+        // 空格或换行可能是渐变段的结束
+        if (i - gradientStart > 10) {
+          gradientSegments.push({
+            start: gradientStart,
+            end: i
+          });
+        }
+        inGradient = false;
+      }
+    }
+    
+    // 如果文本结束时仍在渐变中
+    if (inGradient && lastColorIndex - gradientStart > 10) {
+      gradientSegments.push({
+        start: gradientStart,
+        end: text.length
+      });
+    }
+    
+    // 第二遍：处理文本，将识别出的渐变段转换为MiniMessage格式
+    let lastPos = 0;
+    for (const segment of gradientSegments) {
+      // 添加渐变前的常规文本
+      if (lastPos < segment.start) {
+        const normalText = text.substring(lastPos, segment.start);
+        currentSegment += convertRegularMinecraftText(normalText);
+      }
+      
+      // 处理渐变段
+      const gradientText = text.substring(segment.start, segment.end);
+      const gradientColors = [];
+      const plainText = [];
+      
+      // 提取渐变段中的所有颜色和文本
+      let i = 0;
+      while (i < gradientText.length) {
+        if (gradientText[i] === '§' && i + 1 < gradientText.length) {
+          const colorCode = gradientText[i + 1];
+          if ('0123456789abcdef'.includes(colorCode)) {
+            // 标准颜色代码
+            const mcColor = MC_COLORS.find(c => c.code === colorCode);
+            if (mcColor) {
+              gradientColors.push(mcColor.color);
+            }
+            i += 2;
+          } else if (colorCode === '#' && i + 7 < gradientText.length) {
+            // 十六进制颜色代码
+            const hexColor = gradientText.substring(i + 2, i + 8);
+            gradientColors.push(`#${hexColor}`);
+            i += 8;
+          } else {
+            // 跳过其他格式代码
+            i += 2;
+          }
+        } else {
+          // 普通字符
+          plainText.push(gradientText[i]);
+          i++;
+        }
+      }
+      
+      // 如果找到足够的颜色，创建MiniMessage渐变标签
+      if (gradientColors.length >= 2) {
+        // 取第一个和最后一个颜色作为渐变起点和终点
+        const startColor = gradientColors[0];
+        const endColor = gradientColors[gradientColors.length - 1];
+        
+        // 创建渐变标签和纯文本内容
+        currentSegment += `<gradient:${startColor}:${endColor}>${plainText.join('')}</gradient>`;
+      } else {
+        // 如果颜色不足，按普通文本处理
+        currentSegment += convertRegularMinecraftText(gradientText);
+      }
+      
+      lastPos = segment.end;
+    }
+    
+    // 添加最后一部分非渐变文本
+    if (lastPos < text.length) {
+      currentSegment += convertRegularMinecraftText(text.substring(lastPos));
+    }
+    
+    return currentSegment;
+  };
+
+  // 辅助函数：转换普通的Minecraft文本为MiniMessage格式
+  const convertRegularMinecraftText = (text: string): string => {
+    if (!text) return '';
+    
+    // 保存活跃的格式以确保正确闭合标签
+    const activeFormats = {
+      color: null as string | null,
+      bold: false,
+      italic: false,
+      underline: false,
+      strikethrough: false
+    };
+    
+    // 用于构建结果字符串
+    let result = '';
+    let currentText = '';
+    
+    // 逐字符处理文本
+    for (let i = 0; i < text.length; i++) {
+      // 处理格式代码
+      if (text[i] === '§' && i + 1 < text.length) {
+        // 先添加之前累积的文本
+        if (currentText) {
+          result += currentText;
+          currentText = '';
+        }
+        
+        const code = text[i + 1].toLowerCase();
+        
+        // 处理颜色代码
+        const colorObj = MC_COLORS.find(c => c.code.toLowerCase() === code);
+        if (colorObj) {
+          // 闭合之前的颜色标签
+          if (activeFormats.color) {
+            result += '</color>';
+          }
+          
+          // 颜色代码会重置所有格式
+          if (activeFormats.bold) {
+            result += '</bold>';
+            activeFormats.bold = false;
+          }
+          if (activeFormats.italic) {
+            result += '</italic>';
+            activeFormats.italic = false;
+          }
+          if (activeFormats.underline) {
+            result += '</underline>';
+            activeFormats.underline = false;
+          }
+          if (activeFormats.strikethrough) {
+            result += '</strikethrough>';
+            activeFormats.strikethrough = false;
+          }
+          
+          // 添加新的颜色标签
+          activeFormats.color = colorObj.hex || colorObj.color;
+          result += `<color:${activeFormats.color}>`;
+        }
+        // 处理格式代码
+        else if (code === 'l') {
+          if (!activeFormats.bold) {
+            result += '<bold>';
+            activeFormats.bold = true;
+          }
+        }
+        else if (code === 'o') {
+          if (!activeFormats.italic) {
+            result += '<italic>';
+            activeFormats.italic = true;
+          }
+        }
+        else if (code === 'n') {
+          if (!activeFormats.underline) {
+            result += '<underline>';
+            activeFormats.underline = true;
+          }
+        }
+        else if (code === 'm') {
+          if (!activeFormats.strikethrough) {
+            result += '<strikethrough>';
+            activeFormats.strikethrough = true;
+          }
+        }
+        else if (code === 'r') {
+          // 重置所有格式
+          if (activeFormats.color) {
+            result += '</color>';
+            activeFormats.color = null;
+          }
+          if (activeFormats.bold) {
+            result += '</bold>';
+            activeFormats.bold = false;
+          }
+          if (activeFormats.italic) {
+            result += '</italic>';
+            activeFormats.italic = false;
+          }
+          if (activeFormats.underline) {
+            result += '</underline>';
+            activeFormats.underline = false;
+          }
+          if (activeFormats.strikethrough) {
+            result += '</strikethrough>';
+            activeFormats.strikethrough = false;
+          }
+        }
+        
+        // 跳过格式代码
+        i++;
+      } else {
+        currentText += text[i];
+      }
+    }
+    
+    // 添加剩余文本
+    if (currentText) {
+      result += currentText;
+    }
+    
+    // 闭合所有打开的标签
+    if (activeFormats.color) {
+      result += '</color>';
+    }
+    if (activeFormats.bold) {
+      result += '</bold>';
+    }
+    if (activeFormats.italic) {
+      result += '</italic>';
+    }
+    if (activeFormats.underline) {
+      result += '</underline>';
+    }
+    if (activeFormats.strikethrough) {
+      result += '</strikethrough>';
+    }
+    
+    return result;
+  };
+
   // 修改parseFormattedText函数，更精确地处理空格
   const parseFormattedText = (text: string) => {
     if (!text) return [[{ text: '', color: '#AAAAAA' }]];
@@ -323,16 +636,12 @@ export default function Home() {
     return allLineSegments;
   };
 
-  // 同样修改parseMinimessageText函数
+  // 完全重写parseMinimessageText函数，正确处理MiniMessage格式
   const parseMinimessageText = (text: string) => {
     if (!text) return [[{ text: '', color: '#AAAAAA' }]];
     
-    // 清理重复字符处理不变...
-    
-    // 简化的分行逻辑 - 只按显式换行符分割
-    let lines = text.split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0);
+    // 按换行符分割文本
+    let lines = text.split('\n');
     
     // 确保最多只有两行
     if (lines.length === 0) lines = [''];
@@ -342,13 +651,25 @@ export default function Home() {
     
     // 处理每一行
     for (const line of lines) {
+      if (line.trim() === '') {
+        allLineSegments.push([{ text: '', color: '#AAAAAA' }]);
+        continue;
+      }
+      
       const segments: Array<FormattedSegment> = [];
-      let currentColor = '#AAAAAA'; // 默认颜色
       let currentText = '';
       let i = 0;
       
-      // 跟踪当前激活的格式
-      const activeFormats = {
+      // 跟踪格式状态
+      const formatStack: Array<{
+        type: string;
+        value?: string;
+        startPos: number;
+      }> = [];
+      
+      // 当前应用的格式
+      let currentColor = '#AAAAAA';
+      let currentFormats = {
         bold: false,
         italic: false,
         underline: false,
@@ -356,56 +677,98 @@ export default function Home() {
       };
       
       while (i < line.length) {
-        // 处理格式代码
-        if (line[i] === '§' && i + 1 < line.length) {
-          // 如果有文本累积，先添加到段落中
+        // 查找标签开始
+        if (line[i] === '<') {
+          // 结束当前文本段
           if (currentText) {
-            segments.push({ 
-              text: currentText, 
+            segments.push({
+              text: currentText,
               color: currentColor,
-              fontWeight: activeFormats.bold ? 'bold' : undefined,
-              fontStyle: activeFormats.italic ? 'italic' : undefined,
-              textDecoration: activeFormats.underline 
+              fontWeight: currentFormats.bold ? 'bold' : undefined,
+              fontStyle: currentFormats.italic ? 'italic' : undefined,
+              textDecoration: currentFormats.underline 
                 ? 'underline' 
-                : (activeFormats.strikethrough ? 'line-through' : undefined)
+                : (currentFormats.strikethrough ? 'line-through' : undefined)
             });
             currentText = '';
           }
           
-          // 获取格式代码
-          const formatCode = line[i + 1].toLowerCase();
-          
-          // 处理标准颜色代码
-          const colorObj = MC_COLORS.find(c => c.code.toLowerCase() === formatCode);
-          if (colorObj) {
-            currentColor = colorObj.color;
-            // 颜色代码会重置所有格式
-            activeFormats.bold = false;
-            activeFormats.italic = false;
-            activeFormats.underline = false;
-            activeFormats.strikethrough = false;
-          } 
-          // 处理格式代码
-          else if (formatCode === 'l') {
-            activeFormats.bold = true;
-          } else if (formatCode === 'o') {
-            activeFormats.italic = true;
-          } else if (formatCode === 'n') {
-            activeFormats.underline = true;
-          } else if (formatCode === 'm') {
-            activeFormats.strikethrough = true;
-          } else if (formatCode === 'r') {
-            // 重置所有格式
-            activeFormats.bold = false;
-            activeFormats.italic = false;
-            activeFormats.underline = false;
-            activeFormats.strikethrough = false;
-            currentColor = '#AAAAAA';
+          // 查找标签结束
+          const closeTagIndex = line.indexOf('>', i);
+          if (closeTagIndex === -1) {
+            // 标签未闭合，作为普通文本处理
+            currentText += line[i];
+            i++;
+            continue;
           }
           
-          // 跳过格式代码字符
-          i += 2;
+          const tag = line.substring(i + 1, closeTagIndex);
+          
+          // 处理闭合标签
+          if (tag.startsWith('/')) {
+            const tagName = tag.substring(1);
+            
+            // 查找匹配的开始标签
+            const lastTagIndex = formatStack.findIndex(item => 
+              item.type === tagName || 
+              (tagName === 'color' && item.type === 'color')
+            );
+            
+            if (lastTagIndex !== -1) {
+              // 弹出所有直到匹配标签的格式
+              while (formatStack.length > lastTagIndex) {
+                const poppedTag = formatStack.pop();
+                
+                // 重置格式
+                if (poppedTag?.type === 'color') {
+                  currentColor = '#AAAAAA';
+                } else if (poppedTag?.type === 'bold') {
+                  currentFormats.bold = false;
+                } else if (poppedTag?.type === 'italic') {
+                  currentFormats.italic = false;
+                } else if (poppedTag?.type === 'underline') {
+                  currentFormats.underline = false;
+                } else if (poppedTag?.type === 'strikethrough') {
+                  currentFormats.strikethrough = false;
+                }
+              }
+            }
+          } 
+          // 处理开始标签
+          else {
+            // 解析标签和属性
+            const colonIndex = tag.indexOf(':');
+            let tagName = tag;
+            let tagValue = undefined;
+            
+            if (colonIndex !== -1) {
+              tagName = tag.substring(0, colonIndex);
+              tagValue = tag.substring(colonIndex + 1);
+            }
+            
+            // 设置格式
+            if (tagName === 'color') {
+              currentColor = tagValue || '#AAAAAA';
+              formatStack.push({ type: 'color', value: tagValue, startPos: i });
+            } else if (tagName === 'bold') {
+              currentFormats.bold = true;
+              formatStack.push({ type: 'bold', startPos: i });
+            } else if (tagName === 'italic') {
+              currentFormats.italic = true;
+              formatStack.push({ type: 'italic', startPos: i });
+            } else if (tagName === 'underline') {
+              currentFormats.underline = true;
+              formatStack.push({ type: 'underline', startPos: i });
+            } else if (tagName === 'strikethrough') {
+              currentFormats.strikethrough = true;
+              formatStack.push({ type: 'strikethrough', startPos: i });
+            }
+          }
+          
+          // 跳过整个标签
+          i = closeTagIndex + 1;
         } else {
+          // 普通文本
           currentText += line[i];
           i++;
         }
@@ -413,24 +776,25 @@ export default function Home() {
       
       // 添加最后一段文本
       if (currentText) {
-        segments.push({ 
-          text: currentText, 
+        segments.push({
+          text: currentText,
           color: currentColor,
-          fontWeight: activeFormats.bold ? 'bold' : undefined,
-          fontStyle: activeFormats.italic ? 'italic' : undefined,
-          textDecoration: activeFormats.underline 
+          fontWeight: currentFormats.bold ? 'bold' : undefined,
+          fontStyle: currentFormats.italic ? 'italic' : undefined,
+          textDecoration: currentFormats.underline 
             ? 'underline' 
-            : (activeFormats.strikethrough ? 'line-through' : undefined)
+            : (currentFormats.strikethrough ? 'line-through' : undefined)
         });
       }
       
-      // 只有当段落有内容时才添加
       if (segments.length > 0) {
         allLineSegments.push(segments);
+      } else {
+        allLineSegments.push([{ text: '', color: '#AAAAAA' }]);
       }
     }
     
-    // 如果只有一行，添加一个空行，保持Minecraft MOTD双行样式
+    // 确保有两行
     if (allLineSegments.length === 1) {
       allLineSegments.push([{ text: '', color: '#AAAAAA' }]);
     }
@@ -446,12 +810,45 @@ export default function Home() {
     console.log('编辑器内容已更新:', new Date().getTime());
   }, []); // 空依赖数组，确保回调稳定
 
+  const cleanupRepeatedText = (text: string): string => {
+    if (!text) return '';
+    
+    // 临时替换格式代码，避免干扰正则匹配
+    let cleaned = text.replace(/(&|\§)([0-9a-fk-or]|#[0-9A-Fa-f]{6})/g, '##FORMAT##$2');
+    
+    // 处理多种重复模式
+    cleaned = cleaned
+      // 1. 连续重复字符
+      .replace(/([^\s#])\1+/g, '$1')
+      
+      // 2. 处理"词语末字 末字"模式 (如"公益 益")
+      .replace(/(\S+)(\S)\s+\2+/g, '$1$2')
+      
+      // 3. 处理完全相同词语重复 (如"公益 公益")
+      .replace(/(\S{2,})\s+\1/g, '$1')
+      
+      // 4. 处理单字空格重复 (如"字 字 字")
+      .replace(/(\S)(\s+\1)+/g, '$1$2')
+      
+      // 5. 处理末尾词语或字符的重复
+      .replace(/(\S+)(\s+\S+)+\s+\1$/g, '$1')
+      
+      // 6. 处理多余空格
+      .replace(/\s{2,}/g, ' ');
+    
+    // 恢复格式代码
+    cleaned = cleaned.replace(/##FORMAT##([0-9a-fk-or]|#[0-9A-Fa-f]{6})/g, '&$1');
+    
+    return cleaned;
+  };
+
   const fetchServerMOTD = async () => {
     if (!serverIP) return;
     
     try {
       setFetchingMOTD(true);
       
+      // 先用Minecraft格式获取，然后检测是否有渐变色
       const response = await fetch('/api/fetch-motd', {
         method: 'POST',
         headers: {
@@ -459,7 +856,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           serverIP,
-          format: fetchFormat
+          format: 'minecraft'  // 始终先以Minecraft格式获取
         })
       });
       
@@ -478,14 +875,37 @@ export default function Home() {
           rawTextLines[1] = rawTextLines[1].replace(/^\s+(?=§)/, '');
         }
         
-        // 重新组合处理后的文本
-        const processedText = rawTextLines
-          .join('\n')
-          .replace(/§/g, '&')  // 为编辑器转换§为&
-          .replace(/\r\n/g, '\n'); // 规范化换行符
+        // 将处理后的文本重新组合
+        let processedText = rawTextLines.join('\n');
         
-        // 设置格式模式
-        setIsMinimessage(fetchFormat === 'minimessage');
+        // 检测是否包含渐变色
+        const hasGradient = detectGradient(processedText);
+        
+        // 根据检测结果决定使用哪种格式
+        let finalFormat = hasGradient ? 'minimessage' : fetchFormat;
+        
+        // 当检测到渐变色时，自动切换到MiniMessage格式
+        if (hasGradient) {
+          setIsMinimessage(true);
+          console.log('检测到渐变色，自动切换到MiniMessage格式');
+        } else {
+          setIsMinimessage(fetchFormat === 'minimessage');
+        }
+        
+        // 使用基础清理处理重复字符
+        processedText = cleanupRepeatedText(processedText);
+        
+        // 根据格式进行最终处理
+        if (finalFormat === 'minimessage') {
+          // 转换为MiniMessage格式，支持渐变色
+          processedText = convertMinecraftToMiniMessage(processedText);
+          
+          // 处理换行符
+          processedText = processedText.replace(/\n/g, '<newline>\n');
+        } else {
+          // 如果是Minecraft格式，只替换§为&
+          processedText = processedText.replace(/§/g, '&');
+        }
         
         // 设置处理后的文本
         setMotdText(processedText);
