@@ -66,66 +66,74 @@ export default function MOTDEditor({
   currentText = ''
 }: MOTDEditorProps) {
   const [editor] = useState(() => withReact(createEditor()));
-  // 添加ref来跟踪上次的文本内容
-  const lastTextRef = useRef(serializeToString(initialValue));
-
-  // 初始化effect
+  
+  // 添加内部编辑标志
+  const isUserEditingRef = useRef(false);
+  
+  // 添加上一次外部文本记录
+  const lastExternalTextRef = useRef(currentText);
+  
+  // 添加上一次内部生成的文本记录
+  const lastInternalTextRef = useRef('');
+  
+  // 修改useEffect，只有当确定为外部更新时才更新编辑器
   useEffect(() => {
-    // 仅当currentText有值且与编辑器当前内容不同时更新
-    if (currentText && currentText.trim() !== '') {
+    // 只有当不是用户编辑且文本真的变化时才更新
+    if (!isUserEditingRef.current && 
+        currentText !== lastExternalTextRef.current &&
+        currentText !== lastInternalTextRef.current) {
+      
+      lastExternalTextRef.current = currentText;
+      
       try {
-        // 1. 确保删除所有前导和尾随的空格和换行符
-        let processedText = currentText.trim().replace(/^\n+|\n+$/g, '');
+        // 处理文本 - 代码基本不变
+        let processedText = currentText.trim();
+        processedText = processedText.replace(/§([0-9a-fk-or]|#[0-9A-Fa-f]{6})/g, '&$1');
+        processedText = processedText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
         
-        // 2. 处理文本内部的换行
-        const lines = processedText.split('\n')
-          .map(line => line.trim())
-          .filter(line => line.length > 0);
+        // 分割文本为行
+        const textLines = processedText.split('\n');
         
-        // 3. 确保我们有内容
-        if (lines.length === 0) {
-          return; // 如果没有有效内容，不做任何更改
-        }
-        
-        // 4. 构建完全重置编辑器内容的新Slate值
-        const newValue: Descendant[] = lines.map(line => ({
+        // 创建Slate节点
+        const newValue = textLines.map(line => ({
           type: 'paragraph',
           children: [{ text: line }]
         }));
         
-        // 5. 完全重置编辑器的内容，而不是尝试删除后再插入
+        // 由于这是外部更新，安全地替换编辑器内容
         editor.children = newValue;
-        // 强制Slate重新渲染
         editor.onChange();
-        
-        // 6. 重置选择位置到开头
-        Transforms.select(editor, Editor.start(editor, []));
       } catch (error) {
         console.error('更新编辑器内容时出错:', error);
       }
     }
   }, [currentText, editor]);
   
-  // 辅助函数：获取编辑器的纯文本内容
-  const getPlainTextFromEditor = () => {
-    return editor.children
-      .map(node => Node.string(node))
-      .join('\n');
-  };
-
   return (
     <Slate 
       editor={editor} 
       initialValue={initialValue as CustomElement[]}
       onChange={(value) => {
-        // 确保只有当内容真正变化时才调用onChange
-        const newText = serializeToString(value);
-        if (newText !== lastTextRef.current) { // 使用ref而不是state
-          lastTextRef.current = newText;
-          if (onChange) {
-            onChange(value as Descendant[], newText);
-          }
+        // 确保这是由用户编辑触发的
+        isUserEditingRef.current = true;
+        
+        // 转换为纯文本
+        const newText = value
+          .map(n => Node.string(n))
+          .join('\n');
+        
+        // 记录内部生成的文本
+        lastInternalTextRef.current = newText;
+        
+        // 调用外部onChange
+        if (onChange) {
+          onChange(value as Descendant[], newText);
         }
+        
+        // 使用短时间延迟重置标志，允许下一次外部更新
+        setTimeout(() => {
+          isUserEditingRef.current = false;
+        }, 100);
       }}
     >
       <FormatToolbar 
@@ -135,18 +143,9 @@ export default function MOTDEditor({
       <Editable
         className="min-h-[200px] p-4 border rounded bg-gray-100"
         placeholder={isMinimessage ? "输入MiniMessage内容..." : "输入MOTD内容..."}
-        onKeyDown={(event) => {
-          // 获取当前编辑器中的行数
-          const value = editor.children;
-          const linesCount = value.length;
-          
-          // 如果当前行数超过2行并且用户尝试添加新行，则阻止
-          if (linesCount >= 2 && event.key === 'Enter') {
-            event.preventDefault();
-            return;
-          }
-          
-          // 移除单行59字符的限制
+        // 添加键盘事件处理，确保编辑时标记为用户编辑
+        onKeyDown={() => {
+          isUserEditingRef.current = true;
         }}
       />
     </Slate>

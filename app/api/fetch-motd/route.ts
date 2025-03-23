@@ -167,60 +167,50 @@ function convertRGBToMinecraftColor(hexColor: string): string {
   return closestColor.code;
 }
 
-// 辅助函数：修复重复文本问题
-function cleanupMotdText(text: string): string {
-  // 检测原始文本中是否已有换行
-  const hasNaturalLineBreak = text.includes('\n');
+// 修改cleanupMotdText函数，使用通用正则表达式处理重复字符
+function cleanupMotdText(text: string, isMinimessage = false): string {
+  // 先进行基本的清理
+  let cleaned = text;
   
-  // 先处理格式代码，然后处理重复字符
-  let cleaned = text
-    // 处理重复的格式代码
-    .replace(/(\§l)+/g, '§l')
+  // MiniMessage格式的清理
+  if (isMinimessage) {
+    // 清理重复的标签
+    cleaned = cleaned.replace(/<\/?(color|gradient)[^>]*>/g, (match) => {
+      return match.replace(/\s+/g, '');
+    });
     
-    // 处理重复的字符和空格模式
-    .replace(/([^\s])\1([^\s])\2/g, '$1$2')           // "公公益益"模式 -> "公益"
-    .replace(/([^\s])\1\s+\1\s+/g, '$1 ')             // "益 益 " -> "益 "
-    .replace(/([^\s])\1(?=\s*[^\§])/g, '$1')          // 避免替换颜色代码的重复字符
+    // 使用通用正则表达式清理文本中的重复字符
+    cleaned = cleaned
+      .replace(/([^\s<>])\1+/g, '$1')            // 连续重复字符替换为单个字符
+      .replace(/([^\s<>])(\s+\1)+/g, '$1$2')     // "字 字 字" 模式替换为 "字 "
+      .replace(/([^\s<>]+)(\s+\1)+/g, '$1$2');   // "公益 公益" 模式替换为 "公益 "
+  } else {
+    // Minecraft格式清理 - 同样使用通用正则表达式
+    cleaned = cleaned
+      .replace(/(\§l)+/g, '§l')                  // 重复的格式代码替换为单个
+      .replace(/([^\s§])\1+/g, '$1')             // 连续重复字符替换为单个
+      .replace(/([^\s§])(\s+\1)+/g, '$1$2')      // "字 字 字" 模式替换为 "字 "
+      .replace(/([^\s§]+)(\s+\1)+/g, '$1$2');    // 重复词语替换为单个
     
-    // 处理重复的词语模式
-    .replace(/([^\s]+)\s+\1(\s+|$)/g, '$1$2')       // "生电 生电" -> "生电 "
+    // 新增：处理乱码空格 - 替换不可打印字符和特殊Unicode空格为正常空格
+    cleaned = cleaned
+      .replace(/[\x00-\x1F\x7F-\x9F]/g, '') 
+      .replace(/[\u00A0\u2000-\u200F\u2028-\u202F\u205F\u3000]/g, ' ') 
+      .replace(/\s{3,}/g, '  '); 
     
-    // 特殊处理重复词语
-    .replace(/公公/g, '公')
-    .replace(/益\s+益/g, '益')
-    .replace(/生生/g, '生')
-    .replace(/电\s+电/g, '电')
-    .replace(/原原/g, '原')
-    .replace(/版版/g, '版')
-    .replace(/向\s+向/g, '向')
-    .replace(/和和/g, '和')
-    .replace(/谐\s+谐/g, '谐')
-    .replace(/友友/g, '友')
-    .replace(/爱\s+爱/g, '爱');
-  
-  // 如果没有自然换行，尝试找到合适的换行点
-  if (!hasNaturalLineBreak) {
-    // 寻找关键的换行点 - "互通"后面或"公益"前面
-    if (cleaned.includes('互通') && cleaned.indexOf('互通') < cleaned.length/2) {
-      const breakPoint = cleaned.indexOf('互通') + 2;
-      // 插入换行符
-      cleaned = cleaned.substring(0, breakPoint) + '\n' + cleaned.substring(breakPoint);
+    // 确保换行格式一致
+    if (cleaned.includes('\n')) {
+      // 保留现有换行，不做处理
+    } else if (cleaned.includes('§7公')) {
+      // 只在"公"前插入换行，且确保这是第二行的开始
+      const breakPos = cleaned.indexOf('§7公');
+      if (breakPos > 5) { // 确保不是在文本开头就换行
+        cleaned = cleaned.substring(0, breakPos) + '\n' + cleaned.substring(breakPos);
+      }
     }
-    // 或者在"公"前面插入换行，如果找得到
-    else if (cleaned.includes('§7公')) {
-      const breakPoint = cleaned.indexOf('§7公');
-      cleaned = cleaned.substring(0, breakPoint) + '\n' + cleaned.substring(breakPoint);
-    }
-    // 或者尝试在空格位置换行
-    else if (cleaned.includes('  ')) {
-      const breakPoint = cleaned.indexOf('  ');
-      cleaned = cleaned.substring(0, breakPoint) + '\n' + cleaned.substring(breakPoint + 2);
-    }
-    // 实在没有合适的点，就在中间位置换行
-    else if (cleaned.length > 20) {
-      const breakPoint = Math.floor(cleaned.length / 2);
-      cleaned = cleaned.substring(0, breakPoint) + '\n' + cleaned.substring(breakPoint);
-    }
+    
+    // 转换§为&，为编辑器准备
+    cleaned = cleaned.replace(/§/g, '&');
   }
   
   return cleaned;
@@ -554,7 +544,7 @@ async function fetchMOTD(host: string, port: number, protocol: number, format: s
                   // 根据请求的格式进行适当转换
                   if (format === 'minecraft') {
                     // 对于Minecraft格式，转换RGB为标准Minecraft颜色
-                    result.rawText = cleanupMotdText(formattedText || result.rawText);
+                    result.rawText = cleanupMotdText(formattedText || result.rawText, false);
                   } else {
                     // 对于MiniMessage格式，保留RGB颜色
                     const miniMessageText = extractMiniMessageFormat(response.description);

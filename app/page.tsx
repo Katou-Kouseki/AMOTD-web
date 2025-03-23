@@ -195,48 +195,148 @@ export default function Home() {
     return () => clearInterval(timer);
   }, []);
 
-  // 修改parseFormattedText函数，改进换行处理 - 大约在第149行
+  // 修改parseFormattedText函数，更精确地处理空格
   const parseFormattedText = (text: string) => {
     if (!text) return [[{ text: '', color: '#AAAAAA' }]];
     
-    // 预处理MOTD文本，保留换行符
-    text = text.replace(/([^\s])\1([^\s])\2/g, '$1$2'); // 处理重复字符
+    // 预处理：确保使用§作为格式代码标记（在预览时）
+    text = text.replace(/&([0-9a-fk-or]|#[0-9A-Fa-f]{6})/g, '§$1');
     
-    // 分割多行文本
-    let lines: string[] = [];
+    // 按换行符分割，但更精确地处理空格
+    let lines = text.split('\n');
     
-    // 1. 首先尝试使用显式的换行符
-    if (text.includes('\n')) {
-      lines = text.split('\n');
-    }
-    // 2. 然后尝试使用两个连续空格作为换行标记
-    else if (text.includes('  ')) {
-      const breakPos = text.indexOf('  ');
-      lines = [text.substring(0, breakPos), text.substring(breakPos + 2)];
-    }
-    // 3. 在特定关键点强制换行
-    else if (text.includes('§7公')) {
-      const breakPos = text.indexOf('§7公');
-      lines = [text.substring(0, breakPos), text.substring(breakPos)];
-    }
-    // 4. 尝试找其他合适的分割点
-    else if (text.includes('互通') && text.indexOf('互通') < text.length/2) {
-      const breakPos = text.indexOf('互通') + 2;
-      lines = [text.substring(0, breakPos), text.substring(breakPos)];
-    }
-    // 5. 如果文本较长，在中间位置分割
-    else if (text.length > 25) {
-      const breakPos = Math.floor(text.length / 2);
-      lines = [text.substring(0, breakPos), text.substring(breakPos)];
-    }
-    // 默认情况，保持为单行
-    else {
-      lines = [text];
+    // 对于第二行的开头，如果以空格开始且后面紧跟格式代码，则移除这些前导空格
+    // 这样只处理明显是无意义的前导空格，而不会影响用户有意输入的空格
+    if (lines.length > 1) {
+      lines[1] = lines[1].replace(/^\s+(?=§)/, '');
     }
     
     // 确保最多只有两行
-    lines = lines.filter(line => line.trim()).slice(0, 2);
     if (lines.length === 0) lines = [''];
+    if (lines.length > 2) lines = lines.slice(0, 2);
+    
+    const allLineSegments: Array<Array<FormattedSegment>> = [];
+    
+    // 处理每一行
+    for (const line of lines) {
+      const segments: Array<FormattedSegment> = [];
+      
+      // 如果是空行，直接添加空段落
+      if (line.length === 0) {
+        segments.push({ text: '', color: '#AAAAAA' });
+        allLineSegments.push(segments);
+        continue; // 跳到下一行
+      }
+      
+      let currentColor = '#AAAAAA'; // 默认颜色
+      let currentText = '';
+      let i = 0;
+      
+      // 跟踪当前激活的格式
+      const activeFormats = {
+        bold: false,
+        italic: false,
+        underline: false,
+        strikethrough: false
+      };
+      
+      while (i < line.length) {
+        // 处理格式代码
+        if (line[i] === '§' && i + 1 < line.length) {
+          // 如果有文本累积，先添加到段落中
+          if (currentText) {
+            segments.push({ 
+              text: currentText, 
+              color: currentColor,
+              fontWeight: activeFormats.bold ? 'bold' : undefined,
+              fontStyle: activeFormats.italic ? 'italic' : undefined,
+              textDecoration: activeFormats.underline 
+                ? 'underline' 
+                : (activeFormats.strikethrough ? 'line-through' : undefined)
+            });
+            currentText = '';
+          }
+          
+          // 获取格式代码
+          const formatCode = line[i + 1].toLowerCase();
+          
+          // 处理标准颜色代码
+          const colorObj = MC_COLORS.find(c => c.code.toLowerCase() === formatCode);
+          if (colorObj) {
+            currentColor = colorObj.color;
+            // 颜色代码会重置所有格式
+            activeFormats.bold = false;
+            activeFormats.italic = false;
+            activeFormats.underline = false;
+            activeFormats.strikethrough = false;
+          } 
+          // 处理格式代码
+          else if (formatCode === 'l') {
+            activeFormats.bold = true;
+          } else if (formatCode === 'o') {
+            activeFormats.italic = true;
+          } else if (formatCode === 'n') {
+            activeFormats.underline = true;
+          } else if (formatCode === 'm') {
+            activeFormats.strikethrough = true;
+          } else if (formatCode === 'r') {
+            // 重置所有格式
+            activeFormats.bold = false;
+            activeFormats.italic = false;
+            activeFormats.underline = false;
+            activeFormats.strikethrough = false;
+            currentColor = '#AAAAAA';
+          }
+          
+          // 跳过格式代码字符
+          i += 2;
+        } else {
+          currentText += line[i];
+          i++;
+        }
+      }
+      
+      // 添加最后一段文本
+      if (currentText) {
+        segments.push({ 
+          text: currentText, 
+          color: currentColor,
+          fontWeight: activeFormats.bold ? 'bold' : undefined,
+          fontStyle: activeFormats.italic ? 'italic' : undefined,
+          textDecoration: activeFormats.underline 
+            ? 'underline' 
+            : (activeFormats.strikethrough ? 'line-through' : undefined)
+        });
+      }
+      
+      // 只有当段落有内容时才添加
+      if (segments.length > 0) {
+        allLineSegments.push(segments);
+      }
+    }
+    
+    // 如果只有一行，添加一个空行
+    if (allLineSegments.length === 1) {
+      allLineSegments.push([{ text: '', color: '#AAAAAA' }]);
+    }
+    
+    return allLineSegments;
+  };
+
+  // 同样修改parseMinimessageText函数
+  const parseMinimessageText = (text: string) => {
+    if (!text) return [[{ text: '', color: '#AAAAAA' }]];
+    
+    // 清理重复字符处理不变...
+    
+    // 简化的分行逻辑 - 只按显式换行符分割
+    let lines = text.split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+    
+    // 确保最多只有两行
+    if (lines.length === 0) lines = [''];
+    if (lines.length > 2) lines = lines.slice(0, 2);
     
     const allLineSegments: Array<Array<FormattedSegment>> = [];
     
@@ -330,79 +430,21 @@ export default function Home() {
       }
     }
     
-    // 如果只有一行，添加一个空行
+    // 如果只有一行，添加一个空行，保持Minecraft MOTD双行样式
     if (allLineSegments.length === 1) {
       allLineSegments.push([{ text: '', color: '#AAAAAA' }]);
     }
     
-    console.log('MOTD处理完成，行数:', allLineSegments.length);
-    
     return allLineSegments;
-  };
-
-  // 修改parseMinimessageText函数，删除换行符的处理部分
-  const parseMinimessageText = (text: string) => {
-    if (!text) return '';
-    
-    let formattedText = text;
-    
-    // 处理预设颜色，例如<color:red>
-    formattedText = formattedText.replace(/<color:([a-z_]+)>(.*?)(<\/color>|<reset>|$)/g, (match, color, content) => {
-      const colorMap: Record<string, string> = {
-        'black': '#000000',
-        'dark_blue': '#0000AA',
-        'dark_green': '#00AA00',
-        'dark_aqua': '#00AAAA',
-        'dark_red': '#AA0000',
-        'dark_purple': '#AA00AA',
-        'gold': '#FFAA00',
-        'gray': '#AAAAAA',
-        'dark_gray': '#555555',
-        'blue': '#5555FF',
-        'green': '#55FF55',
-        'aqua': '#55FFFF',
-        'red': '#FF5555',
-        'light_purple': '#FF55FF',
-        'yellow': '#FFFF55',
-        'white': '#FFFFFF'
-      };
-      
-      const colorValue = colorMap[color] || '#FFFFFF';
-      return `<span style="color:${colorValue}">${content}</span>`;
-    });
-    
-    // 处理十六进制颜色，例如<color:#FF5555>
-    formattedText = formattedText.replace(/<color:#([0-9A-Fa-f]{6})>(.*?)(<\/color>|<reset>|$)/g, 
-      (match, hexColor, content) => {
-        return `<span style="color:#${hexColor}">${content}</span>`;
-      }
-    );
-    
-    // 处理渐变色，例如<gradient:#FF5555:#5555FF>
-    formattedText = formattedText.replace(/<gradient:#([0-9A-Fa-f]{6}):#([0-9A-Fa-f]{6})>(.*?)(<\/gradient>|<reset>|$)/g, 
-      (match, startColor, endColor, content) => {
-        // 简单的CSS模拟渐变效果
-        return `<span style="background: linear-gradient(to right, #${startColor}, #${endColor}); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${content}</span>`;
-      }
-    );
-    
-    // 处理格式化标签
-    formattedText = formattedText.replace(/<bold>(.*?)(<\/bold>|<reset>|$)/g, '<span style="font-weight:bold">$1</span>');
-    formattedText = formattedText.replace(/<italic>(.*?)(<\/italic>|<reset>|$)/g, '<span style="font-style:italic">$1</span>');
-    formattedText = formattedText.replace(/<underlined>(.*?)(<\/underlined>|<reset>|$)/g, '<span style="text-decoration:underline">$1</span>');
-    formattedText = formattedText.replace(/<strikethrough>(.*?)(<\/strikethrough>|<reset>|$)/g, '<span style="text-decoration:line-through">$1</span>');
-    
-    // 处理重置标签
-    formattedText = formattedText.replace(/<reset>/g, '</span>');
-    
-    return formattedText;
   };
 
   // 1. 使用useCallback包装onChange处理函数
   const handleEditorChange = useCallback((value: Descendant[], plainText: string) => {
+    // 直接更新状态，无需依赖项
     setMotdText(plainText);
-    // 其他可能导致循环的逻辑...
-  }, []); // 不要在依赖项中包含motdText等状态变量
+    // 可选：记录更新时间戳，帮助调试
+    console.log('编辑器内容已更新:', new Date().getTime());
+  }, []); // 空依赖数组，确保回调稳定
 
   const fetchServerMOTD = async () => {
     if (!serverIP) return;
@@ -426,28 +468,32 @@ export default function Home() {
       }
       
       const data = await response.json();
-      console.log('获取到MOTD数据:', data); // 调试输出
       
-      // 确保文本有值
       if (data.rawText) {
-        console.log('获取到MOTD文本:', data.rawText);
+        // 处理文本，只清理必要的空格
+        const rawTextLines = data.rawText.split('\n');
         
-        // 添加50ms延迟，确保编辑器已经完全初始化
-        setTimeout(() => {
-          setMotdText(data.rawText);
-          // 切换到相应格式
-          setIsMinimessage(fetchFormat === 'minimessage');
-        }, 50);
-      } else {
-        console.warn('获取的MOTD文本为空');
-      }
-      
-      // 隐藏获取UI
-      setShowFetchUI(false);
-      
-      // 可选：设置服务器图标
-      if (data.serverIcon) {
-        setServerIcon(data.serverIcon);
+        // 如果有两行，对第二行的前导空格进行处理
+        if (rawTextLines.length > 1) {
+          rawTextLines[1] = rawTextLines[1].replace(/^\s+(?=§)/, '');
+        }
+        
+        // 重新组合处理后的文本
+        const processedText = rawTextLines
+          .join('\n')
+          .replace(/§/g, '&')  // 为编辑器转换§为&
+          .replace(/\r\n/g, '\n'); // 规范化换行符
+        
+        // 设置格式模式
+        setIsMinimessage(fetchFormat === 'minimessage');
+        
+        // 设置处理后的文本
+        setMotdText(processedText);
+        
+        // 可选：设置服务器图标
+        if (data.serverIcon) {
+          setServerIcon(data.serverIcon);
+        }
       }
     } catch (error) {
       console.error('获取服务器MOTD失败:', error);
@@ -694,21 +740,35 @@ export default function Home() {
               </div>
               <div style={{ width: 'calc(100% - 80px)' }}>
                 <div className="text-white text-base font-normal mb-1">Minecraft Server</div>
-                <div className="w-full bg-transparent border-transparent text-[#AAAAAA] font-minecraft focus:outline-none placeholder-gray-400 cursor-text select-text" style={{ minHeight: '2.2em', maxHeight: '2.2em' }}>
+                <div className="w-full bg-transparent border-transparent text-[#AAAAAA] font-minecraft focus:outline-none placeholder-gray-400 cursor-text select-text" style={{ minHeight: '2.2em' }}>
                   {motdText ? (
                     isMinimessage ? (
-                      // MiniMessage格式渲染 - 分行处理
-                      <div className="w-full">
-                        {motdText.split('\n').map((line, lineIndex) => (
-                          <div key={lineIndex} className="line-clamp-1 leading-tight">
-                            <div dangerouslySetInnerHTML={{ __html: parseMinimessageText(line) }} />
-                          </div>
-                        ))}
-                      </div>
+                      // MiniMessage格式渲染
+                      parseMinimessageText(motdText).map((lineSegments, lineIndex) => (
+                        <div key={lineIndex} className="leading-tight whitespace-pre-wrap">
+                          {typeof lineSegments === 'string' ? (
+                            <div dangerouslySetInnerHTML={{ __html: lineSegments }} />
+                          ) : (
+                            lineSegments.map((segment, segmentIndex) => (
+                              <span 
+                                key={`${lineIndex}-${segmentIndex}`} 
+                                style={{ 
+                                  color: segment.color,
+                                  fontWeight: segment.fontWeight || 'normal',
+                                  fontStyle: segment.fontStyle || 'normal',
+                                  textDecoration: segment.textDecoration || 'none'
+                                }}
+                              >
+                                {segment.text}
+                              </span>
+                            ))
+                          )}
+                        </div>
+                      ))
                     ) : (
                       // Minecraft格式渲染
                       parseFormattedText(motdText).map((lineSegments, lineIndex) => (
-                        <div key={lineIndex} className="line-clamp-1 leading-tight">
+                        <div key={lineIndex} className="leading-tight whitespace-pre-wrap">
                           {lineSegments.map((segment, segmentIndex) => (
                             <span 
                               key={`${lineIndex}-${segmentIndex}`} 
