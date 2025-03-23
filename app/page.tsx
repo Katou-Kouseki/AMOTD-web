@@ -30,6 +30,11 @@ export default function Home() {
   const [countdown, setCountdown] = useState<string | null>(null);
   /* eslint-enable @typescript-eslint/no-unused-vars */
 
+  const [showFetchUI, setShowFetchUI] = useState(false);
+  const [serverIP, setServerIP] = useState('');
+  const [fetchFormat, setFetchFormat] = useState('minecraft');
+  const [fetchingMOTD, setFetchingMOTD] = useState(false);
+
   const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -73,7 +78,7 @@ export default function Home() {
             // 保存完整URL路径而不是相对路径
             setIconPath(result.fileUrl);
             // 设置预览
-            setServerIcon(canvas.toDataURL('image/png'));
+        setServerIcon(canvas.toDataURL('image/png'));
           }
           
           setUploadingIcon(false);
@@ -295,6 +300,74 @@ export default function Home() {
     // 其他可能导致循环的逻辑...
   }, []); // 不要在依赖项中包含motdText等状态变量
 
+  const fetchServerMOTD = async () => {
+    if (!serverIP) return;
+    
+    try {
+      setFetchingMOTD(true);
+      
+      const response = await fetch('/api/fetch-motd', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          serverIP,
+          format: fetchFormat
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('服务器MOTD获取失败');
+      }
+      
+      const data = await response.json();
+      
+      // 更新编辑器内容
+      setMotdText(data.rawText);
+      
+      // 切换到相应格式
+      setIsMinimessage(fetchFormat === 'minimessage');
+      
+      // 隐藏获取UI
+      setShowFetchUI(false);
+      
+      // 可选：设置服务器图标
+      if (data.serverIcon) {
+        setServerIcon(data.serverIcon);
+      }
+    } catch (error) {
+      console.error('获取服务器MOTD失败:', error);
+      alert('获取MOTD失败，请检查服务器IP是否正确');
+    } finally {
+      setFetchingMOTD(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const menu = document.getElementById('format-menu');
+      if (menu && !menu.contains(event.target as Node)) {
+        menu.classList.add('hidden');
+      }
+      
+      const fetchUI = document.getElementById('fetch-ui');
+      if (
+        fetchUI && 
+        !fetchUI.contains(event.target as Node) &&
+        !(event.target as Element).closest('#fetch-trigger')
+      ) {
+        setShowFetchUI(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   return (
     <main className="container mx-auto p-8 relative">
       {/* 社交媒体图标 */}
@@ -358,7 +431,80 @@ export default function Home() {
           </button>
         </div>
         <div>
-          <h2 className="text-2xl mb-4">预览</h2>
+          <h2 className="text-2xl mb-4 flex items-center justify-between relative">
+            <span>预览</span>
+            <div className="relative">
+              <button
+                id="fetch-trigger"
+                className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded"
+                onClick={() => setShowFetchUI(!showFetchUI)}
+              >
+                获取服务器MOTD
+              </button>
+              
+              {showFetchUI && (
+                <div 
+                  id="fetch-ui" 
+                  className="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-700 p-2 rounded-md shadow-lg z-50"
+                  style={{ width: 'auto', whiteSpace: 'nowrap' }}
+                >
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="text"
+                      className="w-28 px-1 py-0.5 text-xs bg-gray-700 text-white rounded border border-gray-600 focus:outline-none"
+                      placeholder="服务器IP"
+                      value={serverIP}
+                      onChange={(e) => setServerIP(e.target.value)}
+                    />
+                    
+                    <button
+                      className="bg-green-600 hover:bg-green-700 text-white px-1.5 py-0.5 text-xs rounded border border-green-700"
+                      onClick={fetchServerMOTD}
+                      disabled={fetchingMOTD}
+                    >
+                      {fetchingMOTD ? '..' : '获取'}
+                    </button>
+                    
+                    <div className="relative">
+                      <button
+                        className="bg-green-600 hover:bg-green-700 text-white px-1 py-0.5 text-xs rounded border border-green-700 flex items-center"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          const menu = document.getElementById('format-menu');
+                          if (menu) menu.classList.toggle('hidden');
+                        }}
+                      >
+                        {fetchFormat === 'minecraft' ? 'MC' : 'MM'} ▼
+                      </button>
+                      
+                      <div id="format-menu" className="absolute left-0 top-full mt-1 bg-gray-800 rounded shadow-lg hidden border border-gray-700 z-30">
+                        <div className="py-0.5">
+                          <button
+                            className={`block px-2 py-0.5 text-xs w-full text-left text-white ${fetchFormat === 'minecraft' ? 'bg-green-700' : 'hover:bg-gray-700'}`}
+                            onClick={() => {
+                              setFetchFormat('minecraft');
+                              document.getElementById('format-menu')?.classList.add('hidden');
+                            }}
+                          >
+                            Minecraft格式
+                          </button>
+                          <button
+                            className={`block px-2 py-0.5 text-xs w-full text-left text-white ${fetchFormat === 'minimessage' ? 'bg-green-700' : 'hover:bg-gray-700'}`}
+                            onClick={() => {
+                              setFetchFormat('minimessage');
+                              document.getElementById('format-menu')?.classList.add('hidden');
+                            }}
+                          >
+                            MiniMessage格式
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </h2>
           <div className="relative border-2 border-gray-800 rounded p-4 bg-[url('/options_background.png')] bg-repeat text-white font-minecraft" style={{ minHeight: '110px' }}>
             <div className="relative z-10 flex items-start mb-3 pointer-events-auto">
             
@@ -470,85 +616,81 @@ export default function Home() {
               </div>
             </div>
           </div>
-          </div>
-          <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
-            <div>调试信息:</div>
-            <div>当前格式: {isMinimessage ? "MiniMessage" : "Minecraft"}</div>
-            <div>文本内容: {motdText || "(空)"}</div>
-            <div>内容长度: {motdText?.length || 0}</div>
-            <div>当前样式码URL: {motdUrl || "(未生成)"}</div>
-          </div>
-          {/* 样式码显示区域 */}
-          {motdUrls.length > 0 && (
-            <div className="mt-4 border rounded-md overflow-hidden">
-              <div className="bg-gray-100 p-2 border-b font-medium text-sm flex justify-between items-center">
-                <div>生成的样式码 ({motdUrls.length})</div>
-                <button
-                  onClick={() => setMotdUrls([])}
-                  className="px-2 py-0.5 bg-red-100 hover:bg-red-200 text-red-700 text-xs rounded transition-colors"
-                >
-                  清空全部
-                </button>
-              </div>
-              <div className="max-h-48 overflow-y-auto">
-                {motdUrls.map((item, index) => (
-                  <div key={item.id} className="p-2 border-b last:border-b-0 hover:bg-gray-50">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center">
-                        <span className="text-gray-500 text-sm">样式码:</span>
-                        <span className="ml-2 font-mono text-sm">{item.id}</span>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(item.id)
-                              .then(() => {
-                                const btn = document.getElementById(`copy-btn-${index}`);
-                                if (btn) {
-                                  const originalText = btn.innerText;
-                                  btn.innerText = '已复制';
-                                  btn.classList.add('bg-green-500');
-                                  btn.classList.remove('bg-gray-200');
-                                  setTimeout(() => {
-                                    btn.innerText = originalText;
-                                    btn.classList.remove('bg-green-500');
-                                    btn.classList.add('bg-gray-200');
-                                  }, 2000);
-                                }
-                              })
-                              .catch(err => console.error('复制失败:', err));
-                          }}
-                          id={`copy-btn-${index}`}
-                          className="ml-2 px-2 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs transition-colors"
-                        >
-                          复制
-                        </button>
-                      </div>
-                      <span className={`text-xs ${item.countdown === '已过期' ? 'text-red-500' : 'text-orange-500'}`}>
-                        {item.countdown}
-                    </span>
-                    </div>
-                    <div className="text-xs text-gray-600 truncate">
-                      <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                        {item.url}
-                      </a>
-                    </div>
-                  </div>
-                  ))}
-                </div>
+        </div>
+        <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
+          <div>调试信息:</div>
+          <div>当前格式: {isMinimessage ? "MiniMessage" : "Minecraft"}</div>
+          <div>文本内容: {motdText || "(空)"}</div>
+          <div>内容长度: {motdText?.length || 0}</div>
+          <div>当前样式码URL: {motdUrl || "(未生成)"}</div>
+        </div>
+        {motdUrls.length > 0 && (
+          <div className="mt-4 border rounded-md overflow-hidden">
+            <div className="bg-gray-100 p-2 border-b font-medium text-sm flex justify-between items-center">
+              <div>生成的样式码 ({motdUrls.length})</div>
+              <button
+                onClick={() => setMotdUrls([])}
+                className="px-2 py-0.5 bg-red-100 hover:bg-red-200 text-red-700 text-xs rounded transition-colors"
+              >
+                清空全部
+              </button>
             </div>
-          )}
-          {/* 当没有样式码时显示提示 */}
-          {motdUrls.length === 0 && (
-            <div className="mt-4 p-4 bg-gray-100 rounded-md text-center text-gray-500">
-              点击&quot;生成样式码&quot;按钮创建MOTD样式码
+            <div className="max-h-48 overflow-y-auto">
+              {motdUrls.map((item, index) => (
+                <div key={item.id} className="p-2 border-b last:border-b-0 hover:bg-gray-50">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center">
+                      <span className="text-gray-500 text-sm">样式码:</span>
+                      <span className="ml-2 font-mono text-sm">{item.id}</span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(item.id)
+                            .then(() => {
+                              const btn = document.getElementById(`copy-btn-${index}`);
+                              if (btn) {
+                                const originalText = btn.innerText;
+                                btn.innerText = '已复制';
+                                btn.classList.add('bg-green-500');
+                                btn.classList.remove('bg-gray-200');
+                                setTimeout(() => {
+                                  btn.innerText = originalText;
+                                  btn.classList.remove('bg-green-500');
+                                  btn.classList.add('bg-gray-200');
+                                }, 2000);
+                              }
+                            })
+                            .catch(err => console.error('复制失败:', err));
+                        }}
+                        id={`copy-btn-${index}`}
+                        className="ml-2 px-2 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs transition-colors"
+                      >
+                        复制
+                      </button>
+                    </div>
+                    <span className={`text-xs ${item.countdown === '已过期' ? 'text-red-500' : 'text-orange-500'}`}>
+                      {item.countdown}
+                  </span>
+                  </div>
+                  <div className="text-xs text-gray-600 truncate">
+                    <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                      {item.url}
+                    </a>
+                  </div>
+                </div>
+                ))}
+              </div>
           </div>
-          )}
-          {/* 显示速率限制错误 */}
-          {rateLimitError && (
-            <div className="mt-4 p-2 bg-red-100 rounded-md text-red-700 text-sm">
-              {rateLimitError}
+        )}
+        {motdUrls.length === 0 && (
+          <div className="mt-4 p-4 bg-gray-100 rounded-md text-center text-gray-500">
+            点击&quot;生成样式码&quot;按钮创建MOTD样式码
         </div>
-          )}
-        </div>
+        )}
+        {rateLimitError && (
+          <div className="mt-4 p-2 bg-red-100 rounded-md text-red-700 text-sm">
+            {rateLimitError}
+      </div>
+        )}
       </div>
       <footer className="mt-16 pt-8 border-t border-gray-200 text-center text-gray-500 text-sm">
         <div className="mb-2">
@@ -580,13 +722,13 @@ export default function Home() {
           </a>
         </div>
       </footer>
-      {/* 添加必要的内联样式 */}
       <style jsx>{`
         @keyframes pulseOpacity {
           0%, 100% { background-color: rgba(0,0,0,0.15); }
           50% { background-color: rgba(0,0,0,0.35); }
         }
       `}</style>
+      </div>
     </main>
   );
 }
