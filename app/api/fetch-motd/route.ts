@@ -24,6 +24,7 @@ interface MCTextComponent {
 interface MotdResult {
   rawText: string;
   serverIcon: string | null;
+  isMinimessage?: boolean;
 }
 
 // 更新支持的协议版本
@@ -204,60 +205,70 @@ function cleanupMotdText(text: string): string {
   return cleaned;
 }
 
-// 修改extractMinecraftFormat函数，确保正确提取换行
+// 修改extractMinecraftFormat函数，确保包含颜色和格式代码
 function extractMinecraftFormat(description: MCTextComponent, convertRGB: boolean = false): string {
-  // 如果是纯文本，直接返回
+  // 处理字符串类型描述
   if (typeof description === 'string') {
     return description;
   }
   
-  // 获取基础文本
-  let result = description.text || '';
-  
-  // 如果没有extra属性，直接返回文本
-  if (!description.extra || !Array.isArray(description.extra)) {
-    return result;
+  // 处理数组类型描述（每个元素一行）
+  if (Array.isArray(description)) {
+    return description.map(line => extractMinecraftFormat(line, convertRGB)).join('\n');
   }
   
-  // 遍历所有组件，正确处理换行
-  for (const component of description.extra) {
-    // 为每个组件创建格式前缀
-    let prefix = '';
-    
-    // 处理颜色
-    if (component.color) {
-      if (typeof component.color === 'string') {
-        if (component.color.startsWith('#')) {
-          const colorCode = convertRGB ? convertRGBToMinecraftColor(component.color) : component.color;
-          prefix += '§' + colorCode;
+  // 获取基础文本和应用基础组件的格式
+  let result = '';
+  const baseText = description.text || '';
+  
+  // 应用当前组件的颜色
+  if (description.color) {
+    if (typeof description.color === 'string') {
+      if (description.color.startsWith('#')) {
+        // 处理十六进制颜色
+        if (convertRGB) {
+          const colorCode = convertRGBToMinecraftColor(description.color);
+          result += `§${colorCode}`;
         } else {
-          const mcColorCode = getMinecraftColorCode(component.color);
-          if (mcColorCode) {
-            prefix += '§' + mcColorCode;
-          }
+          // 保留十六进制格式
+          result += `§#${description.color.substring(1)}`;
+        }
+      } else {
+        // 处理命名颜色
+        const mcColorCode = getMinecraftColorCode(description.color);
+        if (mcColorCode) {
+          result += `§${mcColorCode}`;
         }
       }
     }
-    
-    // 处理格式
-    if (component.bold) prefix += '§l';
-    if (component.italic) prefix += '§o';
-    if (component.underlined) prefix += '§n';
-    if (component.strikethrough) prefix += '§m';
-    if (component.obfuscated) prefix += '§k';
-    
-    // 获取组件文本
-    let componentText = '';
-    
-    // 如果组件有自己的嵌套组件，递归处理
-    if (component.extra && Array.isArray(component.extra)) {
-      componentText = extractMinecraftFormat(component, convertRGB);
-    } else {
-      componentText = component.text || '';
+  }
+  
+  // 应用格式代码
+  if (description.bold) result += '§l';
+  if (description.italic) result += '§o';
+  if (description.underlined) result += '§n';
+  if (description.strikethrough) result += '§m';
+  if (description.obfuscated) result += '§k';
+  
+  // 添加当前文本
+  result += baseText;
+  
+  // 处理换行标记
+  if (result.includes('\\n')) {
+    result = result.replace(/\\n/g, '\n');
+  }
+  
+  // 处理extra属性中的组件
+  if (description.extra && Array.isArray(description.extra)) {
+    for (const component of description.extra) {
+      // 检测是否为换行组件
+      if (component.text === '\n' || component.text === '\\n') {
+        result += '\n';
+      } else {
+        // 递归处理子组件，并传递convertRGB参数
+        result += extractMinecraftFormat(component, convertRGB);
+      }
     }
-    
-    // 将前缀与文本合并
-    result += prefix + componentText;
   }
   
   return result;
@@ -265,47 +276,74 @@ function extractMinecraftFormat(description: MCTextComponent, convertRGB: boolea
 
 // 提取 MiniMessage 格式文本
 function extractMiniMessageFormat(description: MCTextComponent): string {
-  let result = description.text || '';
+  if (typeof description === 'string') {
+    return description;
+  }
   
-  if (description.extra && Array.isArray(description.extra)) {
-    for (const component of description.extra) {
-      let formattedText = '';
-      
-      if (component.color) {
-        if (component.color.startsWith('#')) {
-          formattedText += `<color:${component.color}>`;
-        } else {
-          formattedText += `<color:${component.color}>`;
-        }
-      }
-      
-      if (component.bold) formattedText += '<bold>';
-      if (component.italic) formattedText += '<italic>';
-      if (component.underlined) formattedText += '<underlined>';
-      if (component.strikethrough) formattedText += '<strikethrough>';
-      
-      if (typeof component.text === 'string') {
-        formattedText += component.text;
-      } else if (component.text !== undefined) {
-        formattedText += String(component.text);
-      }
-      
-      if (component.extra && Array.isArray(component.extra)) {
-        const nestedText = extractMiniMessageFormat(component);
-        if (nestedText) {
-          formattedText += nestedText;
-        }
-      }
-      
-      if (component.strikethrough) formattedText += '</strikethrough>';
-      if (component.underlined) formattedText += '</underlined>';
-      if (component.italic) formattedText += '</italic>';
-      if (component.bold) formattedText += '</bold>';
-      if (component.color) formattedText += '</color>';
-      
-      result += formattedText;
+  // 初始化结果
+  let result = '';
+  
+  // 处理基本文本及其格式
+  const baseText = description.text || '';
+  let hasFormat = false;
+  
+  // 添加格式标签
+  if (description.color) {
+    hasFormat = true;
+    if (description.color.startsWith('#')) {
+      result += `<color:${description.color}>`;
+    } else {
+      result += `<color:${description.color}>`;
     }
   }
+  
+  if (description.bold) {
+    hasFormat = true;
+    result += '<bold>';
+  }
+  
+  if (description.italic) {
+    hasFormat = true;
+    result += '<italic>';
+  }
+  
+  if (description.underlined) {
+    hasFormat = true;
+    result += '<underline>';
+  }
+  
+  if (description.strikethrough) {
+    hasFormat = true;
+    result += '<strikethrough>';
+  }
+  
+  if (description.obfuscated) {
+    hasFormat = true;
+    result += '<obfuscated>';
+  }
+  
+  // 添加文本内容
+  result += baseText;
+  
+  // 处理换行
+  if (result.includes('\\n')) {
+    result = result.replace(/\\n/g, '<newline>\n');
+  }
+  
+  // 处理extra组件
+  if (description.extra && Array.isArray(description.extra)) {
+    for (const component of description.extra) {
+      result += extractMiniMessageFormat(component);
+    }
+  }
+  
+  // 关闭标签（顺序相反）
+  if (description.obfuscated) result += '</obfuscated>';
+  if (description.strikethrough) result += '</strikethrough>';
+  if (description.underlined) result += '</underline>';
+  if (description.italic) result += '</italic>';
+  if (description.bold) result += '</bold>';
+  if (description.color) result += '</color>';
   
   return result;
 }
@@ -390,9 +428,10 @@ async function fetchMOTD(
             const response = JSON.parse(jsonStr);
             
             // 处理服务器响应
-            const result = { 
+            const result: MotdResult = { 
               rawText: '', 
-              serverIcon: null
+              serverIcon: null,
+              isMinimessage: false  // 明确添加这个属性
             };
             
             // 增强的MOTD文本提取逻辑
@@ -409,21 +448,22 @@ async function fetchMOTD(
                 
                 // 处理extra字段
                 if (response.description.extra && Array.isArray(response.description.extra)) {
-                  // 提取原始格式文本
-                  const formattedText = extractMinecraftFormat(response.description, true);
-                  console.log('原始提取的文本:', formattedText);
-                  
-                  // 根据请求的格式进行适当转换
                   if (format === 'minecraft') {
-                    // 对于Minecraft格式，转换RGB为标准Minecraft颜色
+                    // 对于Minecraft格式，使用正确的参数调用
+                    const formattedText = extractMinecraftFormat(response.description, true);
+                    console.log('原始提取的文本:', formattedText);
+                    
+                    // 清理重复文本但保留颜色代码
                     result.rawText = cleanupMotdText(formattedText || result.rawText);
                   } else {
-                    // 对于MiniMessage格式，保留RGB颜色
+                    // 对于MiniMessage格式
                     const miniMessageText = extractMiniMessageFormat(response.description);
-                    result.rawText = miniMessageText || formattedText || result.rawText;
+                    result.rawText = miniMessageText || result.rawText;
+                    // 明确标记为MiniMessage格式
+                    result.isMinimessage = true;
                   }
                   
-                  console.log('清理后的文本:', result.rawText);
+                  console.log('最终文本:', result.rawText);
                 }
               }
               
@@ -472,6 +512,178 @@ async function fetchMOTD(
     
     socket.connect(port, host);
   });
+}
+
+// 改进后的渐变色检测函数
+function detectGradient(text: string): boolean {
+  if (!text) return false;
+  
+  // 检查是否已经包含MiniMessage格式的渐变标签
+  if (text.includes('<gradient:')) {
+    return true;
+  }
+  
+  // 提取所有颜色代码及其位置
+  const colorMatches = [];
+  const regex = /§([0-9a-f]|#[0-9A-Fa-f]{6})/g;
+  let match;
+  
+  while ((match = regex.exec(text)) !== null) {
+    colorMatches.push({
+      code: match[1], // 只保存颜色代码部分，不包括§符号
+      position: match.index,
+      fullCode: match[0]
+    });
+  }
+  
+  // 如果颜色代码少于3个，不可能是渐变色
+  if (colorMatches.length < 3) return false;
+  
+  // 检查是否存在连续的不同颜色代码
+  let consecutiveCount = 1;
+  let prevCode = colorMatches[0].code;
+  
+  for (let i = 1; i < colorMatches.length; i++) {
+    // 计算颜色代码之间的文本长度
+    const textBetween = text.substring(
+      colorMatches[i-1].position + colorMatches[i-1].fullCode.length,
+      colorMatches[i].position
+    );
+    
+    // 如果文本长度小于等于2个字符，且颜色代码不同
+    if (textBetween.length <= 2 && colorMatches[i].code !== prevCode) {
+      consecutiveCount++;
+      
+      // 连续3个不同颜色，很可能是渐变
+      if (consecutiveCount >= 3) {
+        return true;
+      }
+    } else {
+      // 重置计数
+      consecutiveCount = 1;
+    }
+    
+    prevCode = colorMatches[i].code;
+  }
+  
+  // 检查十六进制颜色代码（新版Minecraft支持）
+  const hexMatches = text.match(/§#[0-9A-Fa-f]{6}/g) || [];
+  if (hexMatches.length >= 2) {
+    return true;
+  }
+  
+  return false;
+}
+
+// 新增：将Minecraft渐变色转换为MiniMessage渐变标签
+function convertMinecraftGradientToMiniMessage(text: string): string {
+  if (!text) return text;
+  
+  // 提取所有颜色代码及其位置
+  const colorMatches = [];
+  const regex = /§([0-9a-f]|#[0-9A-Fa-f]{6})/g;
+  let match;
+  
+  while ((match = regex.exec(text)) !== null) {
+    let colorValue: string;
+    if (match[1].startsWith('#')) {
+      // 已经是十六进制颜色
+      colorValue = '#' + match[1].substring(1);
+    } else {
+      // 将Minecraft颜色代码转换为十六进制值
+      const mcColors: Record<string, string> = {
+        '0': '#000000', '1': '#0000AA', '2': '#00AA00', '3': '#00AAAA',
+        '4': '#AA0000', '5': '#AA00AA', '6': '#FFAA00', '7': '#AAAAAA',
+        '8': '#555555', '9': '#5555FF', 'a': '#55FF55', 'b': '#55FFFF',
+        'c': '#FF5555', 'd': '#FF55FF', 'e': '#FFFF55', 'f': '#FFFFFF'
+      };
+      colorValue = mcColors[match[1]] || '#FFFFFF';
+    }
+    
+    colorMatches.push({
+      position: match.index,
+      length: match[0].length,
+      color: colorValue
+    });
+  }
+  
+  // 如果找到的颜色少于2个，无法形成渐变
+  if (colorMatches.length < 2) return text;
+  
+  // 按位置排序
+  colorMatches.sort((a, b) => a.position - b.position);
+  
+  // 识别潜在的渐变段落
+  const gradientSegments = [];
+  let currentSegment = null;
+  
+  for (let i = 0; i < colorMatches.length - 1; i++) {
+    const current = colorMatches[i];
+    const next = colorMatches[i + 1];
+    
+    // 获取两个颜色代码之间的文本
+    const segmentStart = current.position + current.length;
+    const segmentEnd = next.position;
+    const segmentText = text.substring(segmentStart, segmentEnd);
+    
+    // 如果文本很短（小于等于2个字符），可能是渐变的一部分
+    if (segmentText.length <= 2 && segmentText.length > 0) {
+      if (!currentSegment) {
+        currentSegment = {
+          start: i,
+          end: i + 1,
+          colors: [current.color, next.color],
+          text: segmentText
+        };
+      } else {
+        // 延伸当前段落
+        currentSegment.end = i + 1;
+        currentSegment.colors.push(next.color);
+        currentSegment.text += segmentText;
+      }
+    } else {
+      // 完成当前段落
+      if (currentSegment && currentSegment.colors.length >= 2) {
+        gradientSegments.push(currentSegment);
+      }
+      currentSegment = null;
+    }
+  }
+  
+  // 完成最后一个段落
+  if (currentSegment && currentSegment.colors.length >= 2) {
+    gradientSegments.push(currentSegment);
+  }
+  
+  // 如果没有找到渐变段落，返回原文本
+  if (gradientSegments.length === 0) return text;
+  
+  // 将原文本转换为MiniMessage格式，替换渐变段落
+  let result = text;
+  
+  // 从后向前替换，避免位置偏移
+  for (let i = gradientSegments.length - 1; i >= 0; i--) {
+    const segment = gradientSegments[i];
+    const startMatch = colorMatches[segment.start];
+    const endMatch = colorMatches[segment.end];
+    
+    // 渐变段落的起始和结束位置
+    const startPos = startMatch.position;
+    const endPos = endMatch.position + endMatch.length + segment.text.length;
+    
+    // 渐变标签
+    const gradientTag = `<gradient:${segment.colors[0]}:${segment.colors[segment.colors.length - 1]}>${segment.text}</gradient>`;
+    
+    // 替换文本
+    result = result.substring(0, startPos) + 
+             gradientTag + 
+             result.substring(endPos);
+  }
+  
+  // 清理剩余的Minecraft格式代码
+  result = result.replace(/§[0-9a-fklmnor]/g, '');
+  
+  return result;
 }
 
 export async function POST(request: NextRequest) {
@@ -563,6 +775,26 @@ export async function POST(request: NextRequest) {
           clearTimeout(res.timeout);
         }
       });
+      
+      // 在POST处理中增强渐变色的检测和处理
+      if (result && result.rawText) {
+        // 检测是否包含渐变色 - 增加对多种格式的支持
+        const hasGradient = detectGradient(result.rawText) ||
+                            (result.rawText.match(/§[0-9a-f]/) || []).length >= 3;
+        
+        if (hasGradient) {
+          console.log('检测到渐变色MOTD，自动转换为MiniMessage格式');
+          
+          // 无论请求格式如何，发现渐变色都转换为MiniMessage
+          result.rawText = convertMinecraftGradientToMiniMessage(result.rawText);
+          result.isMinimessage = true;
+        }
+      }
+      
+      // 如果请求格式是minimessage，确保返回结果标记为minimessage
+      if (format === 'minimessage' && result && result.rawText) {
+        result.isMinimessage = true;
+      }
       
       return NextResponse.json(result);
     } catch (error) {

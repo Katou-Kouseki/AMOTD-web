@@ -759,7 +759,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           serverIP,
-          format: 'minecraft'
+          format: fetchFormat
         })
       });
       
@@ -770,28 +770,22 @@ export default function Home() {
       const data = await response.json();
       
       if (data.rawText) {
-        // 最小化处理，保留原始换行和格式
         let originalText = data.rawText;
-        
-        // 统一换行符格式
         originalText = originalText.replace(/\r\n/g, '\n');
         
-        // 检测是否包含渐变色
-        const hasGradient = detectGradient(originalText);
+        // 优先使用服务器返回的格式标记
+        const useMinimessage = data.isMinimessage === true || detectGradient(originalText);
         
-        // 根据检测结果决定使用哪种格式
-        const finalFormat = hasGradient ? 'minimessage' : fetchFormat;
+        setIsMinimessage(useMinimessage);
         
-        // 设置格式状态
-        setIsMinimessage(finalFormat === 'minimessage');
-        
-        // 最小化处理，只做必要的替换
-        if (finalFormat === 'minimessage') {
-          const convertedText = convertMinecraftToMiniMessage(originalText);
-          // 使用<newline>标记替换换行符
-          setMotdText(convertedText.replace(/\n/g, '<newline>\n'));
+        if (useMinimessage) {
+          // 检查是否需要转换 - 如果文本包含§格式码但没有<gradient>标签
+          if (!originalText.includes('<gradient:') && originalText.includes('§')) {
+            console.log('前端检测到渐变色但未转换，执行转换');
+            originalText = convertMinecraftToMiniMessage(originalText);
+          }
+          setMotdText(originalText.replace(/\n/g, '<newline>\n'));
         } else {
-          // 只替换格式标记，保留原始换行
           setMotdText(originalText.replace(/§([0-9a-fklmnor]|#[0-9A-Fa-f]{6})/g, '&$1'));
         }
         
