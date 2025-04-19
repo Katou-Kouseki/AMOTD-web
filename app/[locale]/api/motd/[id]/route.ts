@@ -8,19 +8,31 @@ export async function GET(
   { params }: { params: { id: string, locale: string } }
 ) {
   try {
-    const id = params.id;
+    // 获取并验证参数
+    const id = params?.id;
+    const locale = params?.locale || 'zh';
+    
+    if (!id) {
+      const errorMessage = locale === 'en' ? 'Missing MOTD ID parameter' : '缺少MOTD ID参数';
+      return NextResponse.json({
+        error: errorMessage
+      }, { status: 400 });
+    }
+    
     console.log('获取到的ID:', id);
     
-    if (!id || id.length !== 8) {
+    if (id.length !== 8) {
+      const errorMessage = locale === 'en' ? 'Invalid MOTD ID' : '无效的MOTD ID';
       return NextResponse.json({
-        error: '无效的MOTD ID'
+        error: errorMessage
       }, { status: 400 });
     }
     
     const filePath = path.join(process.cwd(), 'public', 'motds', `${id}.json`);
     if (!existsSync(filePath)) {
+      const errorMessage = locale === 'en' ? 'MOTD data not found' : '未找到MOTD数据';
       return NextResponse.json({
-        error: '未找到MOTD数据'
+        error: errorMessage
       }, { status: 404 });
     }
     
@@ -29,8 +41,9 @@ export async function GET(
     
     // 检查是否过期
     if (motdData.expiresAt && motdData.expiresAt < Date.now()) {
+      const errorMessage = locale === 'en' ? 'MOTD data has expired' : 'MOTD数据已过期';
       return NextResponse.json({
-        error: 'MOTD数据已过期'
+        error: errorMessage
       }, { status: 410 });
     }
     
@@ -43,8 +56,10 @@ export async function GET(
     
   } catch (error) {
     console.error('获取MOTD数据出错:', error);
+    const locale = params?.locale || 'zh';
+    const errorMessage = locale === 'en' ? 'Server internal error' : '服务器内部错误';
     return NextResponse.json({
-      error: '服务器内部错误'
+      error: errorMessage
     }, { status: 500 });
   }
 } 

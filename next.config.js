@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
-const withNextIntl = require('next-intl/plugin')('./i18n.js');
+const createNextIntlPlugin = require('next-intl/plugin');
+
+const withNextIntl = createNextIntlPlugin();
 
 const nextConfig = {
   reactStrictMode: true,

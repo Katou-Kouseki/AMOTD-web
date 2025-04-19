@@ -12,10 +12,17 @@ export async function GET(
   { params }: { params: Params }
 ) {
   try {
-    const id = params.id;
+    // 使用params.id前确保它是有效的
+    const id = params?.id;
+    if (!id) {
+      return NextResponse.json({
+        error: '缺少MOTD ID参数'
+      }, { status: 400 });
+    }
+    
     console.log('获取到的ID:', id);
     
-    if (!id || id.length !== 8) {
+    if (id.length !== 8) {
       return NextResponse.json({
         error: '无效的MOTD ID'
       }, { status: 400 });
