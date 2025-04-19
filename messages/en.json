@@ -1,0 +1,60 @@
+{
+  "title": "MOTD Online Generator — Free, Intuitive, Useful Minecraft MOTD Generator",
+  "description": "A modern Minecraft server MOTD generation and preview tool, supporting complete Minecraft formatting codes and custom server icons.",
+  "common": {
+    "language": "Language"
+  },
+  "editor": {
+    "formatToolbar": "Format Toolbar",
+    "format": "Format",
+    "minecraftFormat": "Minecraft Format",
+    "miniMessageFormat": "MiniMessage Format",
+    "inputMinimessage": "Enter MiniMessage content...",
+    "inputMotd": "Enter MOTD content...",
+    "colors": {
+      "black": "Black",
+      "darkBlue": "Dark Blue",
+      "darkGreen": "Dark Green",
+      "darkAqua": "Dark Aqua",
+      "darkRed": "Dark Red",
+      "purple": "Purple",
+      "gold": "Gold",
+      "gray": "Gray",
+      "darkGray": "Dark Gray",
+      "blue": "Blue",
+      "green": "Green",
+      "aqua": "Aqua",
+      "red": "Red",
+      "pink": "Pink",
+      "yellow": "Yellow",
+      "white": "White"
+    },
+    "formats": {
+      "bold": "Bold",
+      "italic": "Italic",
+      "underline": "Underline",
+      "strikethrough": "Strikethrough",
+      "reset": "Reset"
+    }
+  },
+  "home": {
+    "serverIcon": "Server Icon",
+    "uploadIcon": "Upload Icon",
+    "uploadingIcon": "Uploading...",
+    "generateStyleCode": "Generate Style Code",
+    "previewTitle": "Preview",
+    "debugInfo": "Debug Info",
+    "fetchServerMotd": "Fetch Server MOTD",
+    "serverIp": "Server IP",
+    "serverPort": "Server Port",
+    "fetch": "Fetch",
+    "fetchingMotd": "Fetching...",
+    "copySuccess": "Copied Successfully",
+    "copyError": "Copy Failed",
+    "formatType": "Format Type",
+    "expired": "Expired",
+    "hours": "h",
+    "minutes": "m",
+    "seconds": "s"
+  }
+} 

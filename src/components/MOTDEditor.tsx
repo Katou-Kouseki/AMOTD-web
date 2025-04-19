@@ -1,3 +1,4 @@
+'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { createEditor, Descendant, Node, Transforms, BaseEditor, Editor } from 'slate';
 import { Slate, Editable, withReact, useSlate, ReactEditor } from 'slate-react';

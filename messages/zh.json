@@ -1,0 +1,60 @@
+{
+  "title": "MOTD在线生成器 —— 免费 直观 好用的Minecraft MOTD生成器",
+  "description": "一个现代化的Minecraft服务器MOTD生成和预览工具，支持完整的Minecraft格式化代码和自定义服务器图标。",
+  "common": {
+    "language": "语言"
+  },
+  "editor": {
+    "formatToolbar": "格式工具栏",
+    "format": "格式",
+    "minecraftFormat": "Minecraft格式",
+    "miniMessageFormat": "MiniMessage格式",
+    "inputMinimessage": "输入MiniMessage内容...",
+    "inputMotd": "输入MOTD内容...",
+    "colors": {
+      "black": "黑色",
+      "darkBlue": "深蓝色",
+      "darkGreen": "深绿色",
+      "darkAqua": "深青色",
+      "darkRed": "深红色",
+      "purple": "紫色",
+      "gold": "金色",
+      "gray": "灰色",
+      "darkGray": "深灰色",
+      "blue": "蓝色",
+      "green": "绿色",
+      "aqua": "青色",
+      "red": "红色",
+      "pink": "粉色",
+      "yellow": "黄色",
+      "white": "白色"
+    },
+    "formats": {
+      "bold": "粗体",
+      "italic": "斜体",
+      "underline": "下划线",
+      "strikethrough": "删除线",
+      "reset": "重置"
+    }
+  },
+  "home": {
+    "serverIcon": "服务器图标",
+    "uploadIcon": "上传图标",
+    "uploadingIcon": "上传中...",
+    "generateStyleCode": "生成样式码",
+    "previewTitle": "预览",
+    "debugInfo": "调试信息",
+    "fetchServerMotd": "获取服务器MOTD",
+    "serverIp": "服务器IP",
+    "serverPort": "服务器端口",
+    "fetch": "获取",
+    "fetchingMotd": "获取中...",
+    "copySuccess": "复制成功",
+    "copyError": "复制失败",
+    "formatType": "格式类型",
+    "expired": "已过期",
+    "hours": "小时",
+    "minutes": "分钟",
+    "seconds": "秒"
+  }
+} 
