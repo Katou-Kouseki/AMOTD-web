@@ -1,9 +1,10 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { createEditor, Descendant, Node, Transforms, BaseEditor, Editor } from 'slate';
+import { createEditor, Descendant, Node, Transforms, BaseEditor } from 'slate';
 import { Slate, Editable, withReact, useSlate, ReactEditor } from 'slate-react';
 import ColorPicker from './ColorPicker';
 import styles from '../styles/editor.module.css';
+import { useTranslations } from 'next-intl';
 
 export type CustomElement = { type: 'paragraph'; children: CustomText[] };
 export type CustomText = { text: string; color?: string };
@@ -67,12 +68,10 @@ export default function MOTDEditor({
   currentText = ''
 }: MOTDEditorProps) {
   const [editor] = useState(() => withReact(createEditor()));
+  const t = useTranslations('editor');
   
   // 添加内部编辑标志
   const isUserEditingRef = useRef(false);
-  
-  // 添加上一次外部文本记录
-  const lastProcessedTextRef = useRef(currentText);
   
   // 修改useEffect，只有当确定为外部更新时才更新编辑器
   useEffect(() => {
@@ -158,7 +157,7 @@ export default function MOTDEditor({
       />
       <Editable
         className="min-h-[200px] p-4 border rounded bg-gray-100"
-        placeholder={isMinimessage ? "输入MiniMessage内容..." : "输入MOTD内容..."}
+        placeholder={isMinimessage ? t('inputMinimessage') : t('inputMotd')}
         // 添加键盘事件处理，确保编辑时标记为用户编辑
         onKeyDown={() => {
           isUserEditingRef.current = true;
@@ -176,42 +175,43 @@ interface FormatToolbarProps {
 
 export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarProps) => {
   const editor = useSlate();
+  const t = useTranslations('editor');
   
   // Minecraft 格式化代码映射
   const colorCodes = [
-    { code: '0', name: '黑色', color: '#000000' },
-    { code: '1', name: '深蓝色', color: '#0000AA' },
-    { code: '2', name: '深绿色', color: '#00AA00' },
-    { code: '3', name: '深青色', color: '#00AAAA' },
-    { code: '4', name: '深红色', color: '#AA0000' },
-    { code: '5', name: '紫色', color: '#AA00AA' },
-    { code: '6', name: '金色', color: '#FFAA00' },
-    { code: '7', name: '灰色', color: '#AAAAAA' },
-    { code: '8', name: '深灰色', color: '#555555' },
-    { code: '9', name: '蓝色', color: '#5555FF' },
-    { code: 'a', name: '绿色', color: '#55FF55' },
-    { code: 'b', name: '青色', color: '#55FFFF' },
-    { code: 'c', name: '红色', color: '#FF5555' },
-    { code: 'd', name: '粉色', color: '#FF55FF' },
-    { code: 'e', name: '黄色', color: '#FFFF55' },
-    { code: 'f', name: '白色', color: '#FFFFFF' },
+    { code: '0', name: t('colors.black'), color: '#000000' },
+    { code: '1', name: t('colors.darkBlue'), color: '#0000AA' },
+    { code: '2', name: t('colors.darkGreen'), color: '#00AA00' },
+    { code: '3', name: t('colors.darkAqua'), color: '#00AAAA' },
+    { code: '4', name: t('colors.darkRed'), color: '#AA0000' },
+    { code: '5', name: t('colors.purple'), color: '#AA00AA' },
+    { code: '6', name: t('colors.gold'), color: '#FFAA00' },
+    { code: '7', name: t('colors.gray'), color: '#AAAAAA' },
+    { code: '8', name: t('colors.darkGray'), color: '#555555' },
+    { code: '9', name: t('colors.blue'), color: '#5555FF' },
+    { code: 'a', name: t('colors.green'), color: '#55FF55' },
+    { code: 'b', name: t('colors.aqua'), color: '#55FFFF' },
+    { code: 'c', name: t('colors.red'), color: '#FF5555' },
+    { code: 'd', name: t('colors.pink'), color: '#FF55FF' },
+    { code: 'e', name: t('colors.yellow'), color: '#FFFF55' },
+    { code: 'f', name: t('colors.white'), color: '#FFFFFF' },
   ];
 
   const formatButtons = [
-    { code: 'l', name: '粗体', icon: 'format_bold' },
-    { code: 'o', name: '斜体', icon: 'format_italic' },
-    { code: 'n', name: '下划线', icon: 'format_underlined' },
-    { code: 'm', name: '删除线', icon: 'strikethrough_s' },
-    { code: 'r', name: '重置', icon: 'restart_alt' },
+    { code: 'l', name: t('formats.bold'), icon: 'format_bold' },
+    { code: 'o', name: t('formats.italic'), icon: 'format_italic' },
+    { code: 'n', name: t('formats.underline'), icon: 'format_underlined' },
+    { code: 'm', name: t('formats.strikethrough'), icon: 'strikethrough_s' },
+    { code: 'r', name: t('formats.reset'), icon: 'restart_alt' },
   ];
 
   // MiniMessage格式代码
   const miniMessageFormatButtons = [
-    { code: '<bold>', name: '粗体', icon: 'format_bold' },
-    { code: '<italic>', name: '斜体', icon: 'format_italic' },
-    { code: '<underlined>', name: '下划线', icon: 'format_underlined' },
-    { code: '<strikethrough>', name: '删除线', icon: 'strikethrough_s' },
-    { code: '<reset>', name: '重置', icon: 'restart_alt' },
+    { code: '<bold>', name: t('formats.bold'), icon: 'format_bold' },
+    { code: '<italic>', name: t('formats.italic'), icon: 'format_italic' },
+    { code: '<underlined>', name: t('formats.underline'), icon: 'format_underlined' },
+    { code: '<strikethrough>', name: t('formats.strikethrough'), icon: 'strikethrough_s' },
+    { code: '<reset>', name: t('formats.reset'), icon: 'restart_alt' },
   ];
 
   // 颜色选择器状态
@@ -226,9 +226,9 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
     <div className="p-2 bg-gray-200 rounded-t mb-1">
       {/* 格式选择器 */}
       <div className="flex justify-between items-center mb-2">
-        <div className="text-sm font-bold">格式工具栏</div>
+        <div className="text-sm font-bold">{t('formatToolbar')}</div>
         <div className="flex items-center">
-          <span className="mr-2 text-sm">格式:</span>
+          <span className="mr-2 text-sm">{t('format')}:</span>
           <select 
             className="border rounded px-2 py-1 text-sm bg-white"
             value={isMinimessage ? "minimessage" : "minecraft"}
@@ -237,10 +237,10 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
                 onFormatChange(e.target.value === "minimessage");
               }
             }}
-            aria-label="选择格式"
+            aria-label={t('format')}
           >
-            <option value="minecraft">Minecraft格式</option>
-            <option value="minimessage">MiniMessage格式</option>
+            <option value="minecraft">{t('minecraftFormat')}</option>
+            <option value="minimessage">{t('miniMessageFormat')}</option>
           </select>
         </div>
       </div>

@@ -3,13 +3,9 @@ import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 
-type Params = {
-  id: string;
-};
-
 export async function GET(
   request: NextRequest,
-  { params }: { params: Params }
+  { params }: { params: { id: string, locale: string } }
 ) {
   try {
     const id = params.id;
