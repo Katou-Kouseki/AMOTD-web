@@ -1,14 +1,20 @@
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
-import { locales } from './i18n';
 
-export default createMiddleware({
-  // 配置支持的语言
-  locales: locales,
-  // 默认语言
-  defaultLocale: 'zh',
-  // 启用语言检测
-  localeDetection: true
-});
+// 这是标准的Next.js中间件格式
+export function middleware(request: NextRequest) {
+  // 使用next-intl创建的中间件
+  const intlMiddleware = createMiddleware({
+    locales: ['zh', 'en'],
+    defaultLocale: 'zh',
+    localeDetection: true,
+    localePrefix: 'as-needed'
+  });
+  
+  // 执行中间件并返回结果
+  return intlMiddleware(request);
+}
 
 export const config = {
   // 匹配所有路径，除了api、_next和文件路径
