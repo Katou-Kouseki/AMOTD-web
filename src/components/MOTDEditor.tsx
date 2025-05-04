@@ -64,18 +64,6 @@ export default function MOTDEditor({
   const [editor] = useState(() => withReact(createEditor()));
   const t = useTranslations('editor');
   
-  // 添加详细诊断日志
-  useEffect(() => {
-    console.log('===== MOTDEditor Component =====');
-    console.log('MOTDEditor loaded with translations:');
-    console.log('- inputMotd:', t('inputMotd'));
-    console.log('- formatToolbar:', t('formatToolbar'));
-    console.log('- format:', t('format'));
-    console.log('- minecraftFormat:', t('minecraftFormat'));
-    console.log('- miniMessageFormat:', t('miniMessageFormat'));
-    console.log('==============================');
-  }, [t]);
-  
   // 添加内部编辑标志
   const isUserEditingRef = useRef(false);
   
@@ -123,12 +111,12 @@ export default function MOTDEditor({
             }
             // 更新编辑器状态
             editor.onChange();
-          } catch (error) {
-            console.error('设置编辑器选区时出错:', error);
+          } catch {
+            // 选区设置错误
           }
         }, 0);
-      } catch (error) {
-        console.error('导入文本到编辑器失败:', error);
+      } catch {
+        // 文本导入错误
       }
     }
   }, [currentText, editor, isMinimessage]);

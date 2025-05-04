@@ -49,38 +49,6 @@ interface FormattedSegment {
 export default function Home() {
   const t = useTranslations();
   const params = useParams();
-  console.log('页面接收到的params:', params); // 调试用
-  
-  // 增强诊断日志 - 更详细的调试信息
-  useEffect(() => {
-    console.log('=======================================');
-    console.log('Page component loaded with locale:', params.locale);
-    console.log('当前路径:', window.location.pathname);
-    console.log('Language from params:', params.locale);
-    console.log('翻译测试 (t function test):');
-    
-    try {
-      // 测试基本翻译
-      const title = t('title');
-      const formatToolbar = t('editor.formatToolbar');
-      const uploadIcon = t('home.uploadIcon');
-      
-      console.log('标题 (title):', title);
-      console.log('格式工具栏 (formatToolbar):', formatToolbar);
-      console.log('上传图标 (uploadIcon):', uploadIcon);
-      
-      // 测试嵌套翻译
-      console.log('颜色标题 (colors.title):', t('editor.colors.title'));
-      console.log('预览标题 (previewTitle):', t('home.previewTitle'));
-      
-      // 测试按钮和交互文本
-      console.log('复制 (copy):', t('home.copy'));
-      console.log('获取 (fetch):', t('home.fetch'));
-    } catch (error) {
-      console.error('翻译错误 (Translation error):', error);
-    }
-    console.log('=======================================');
-  }, [t, params]);
   
   const [serverIcon, setServerIcon] = useState<string | null>(null);
   const [motdText, setMotdText] = useState<string>('');
@@ -352,8 +320,7 @@ export default function Home() {
                       strikethrough: currentSegment.strikethrough
                     });
                   }
-                } catch (error) {
-                  console.error('处理渐变颜色时出错:', error);
+                } catch {
                   // 错误处理：使用纯文本添加
                   segments.push({
                     text: currentGradientText,
@@ -625,8 +592,7 @@ export default function Home() {
       };
       reader.readAsDataURL(file);
       
-    } catch (error) {
-      console.error('处理图片错误:', error);
+    } catch {
       setUploadingIcon(false);
     }
   };
@@ -663,12 +629,10 @@ export default function Home() {
       }
       
       if (!response.ok) {
-        console.error('生成样式码失败:', response.status);
         return;
       }
       
       const result = await response.json();
-      console.log('API响应:', result);
       
       const baseUrl = window.location.origin;
       const newUrl = `${baseUrl}/api/motd/${result.id}`;
@@ -686,8 +650,8 @@ export default function Home() {
         setMotdUrls(prev => [...prev, newStyleCode]);
       }
       
-    } catch (error) {
-      console.error('生成样式码错误:', error);
+    } catch {
+      // 处理错误
     }
   };
 
@@ -718,8 +682,7 @@ export default function Home() {
         }
       }
       alert(t('home.copySuccess'));
-    } catch (error) {
-      console.error('复制错误:', error);
+    } catch {
       alert(t('home.copyError'));
     }
   };
@@ -733,7 +696,6 @@ export default function Home() {
       const response = await fetch(`/api/fetch-motd?ip=${serverIP}&format=${fetchFormat}`);
       
       if (!response.ok) {
-        console.error('获取MOTD失败:', response.status);
         setFetchingMOTD(false);
         return;
       }
@@ -756,8 +718,7 @@ export default function Home() {
       
       setFetchingMOTD(false);
       setShowFetchModal(false); // 关闭弹窗
-    } catch (error) {
-      console.error('获取MOTD错误:', error);
+    } catch {
       setFetchingMOTD(false);
     }
   };
