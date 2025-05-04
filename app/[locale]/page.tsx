@@ -100,8 +100,8 @@ export default function Home() {
     expiresAt: number,
     countdown: string
   }>>([]);
-  // 添加motdLines状态用于存储MOTD文本的行
-  const [motdLines, setMotdLines] = useState<{line1: string, line2: string}>({
+  // 添加motdLines状态用于存储MOTD文本的行 - 只使用setter
+  const [, setMotdLines] = useState<{line1: string, line2: string}>({
     line1: '',
     line2: ''
   });

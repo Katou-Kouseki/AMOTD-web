@@ -7,7 +7,7 @@ export default createMiddleware({
   locales: i18nConfig.locales,
   defaultLocale: i18nConfig.defaultLocale,
   localeDetection: i18nConfig.localeDetection,
-  localePrefix: i18nConfig.localePrefix
+  localePrefix: i18nConfig.localePrefix as 'always'
 });
 
 // 匹配规则
