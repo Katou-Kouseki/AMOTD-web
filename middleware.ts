@@ -1,22 +1,23 @@
 import createMiddleware from 'next-intl/middleware';
-import i18nConfig from './i18n';
 
 // 创建国际化中间件
 export default createMiddleware({
-  // 配置支持的语言
-  locales: i18nConfig.locales,
-  // 设置默认语言
-  defaultLocale: i18nConfig.defaultLocale,
-  // 启用语言检测
-  localeDetection: true
+  // 支持的语言列表
+  locales: ['zh', 'en'],
+  // 默认语言
+  defaultLocale: 'zh',
+  // 启用语言自动检测
+  localeDetection: true,
+  // 始终在URL中包含语言前缀
+  localePrefix: 'always'
 });
 
-// 匹配需要处理的路径
+// 匹配规则
 export const config = {
   matcher: [
-    // 需要国际化的路径
-    '/((?!api|_next|.*\\..*).*)',
-    // 排除特定路径
-    '/((?!_next|api|.*\\..*).*)' 
+    // 匹配所有非静态资源和API路由
+    '/',
+    '/(zh|en)/:path*',
+    '/((?!api|_next|_vercel|.*\\..*).*)'
   ]
 }; 

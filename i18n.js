@@ -21,5 +21,5 @@ module.exports = {
   // 启用区域检测
   localeDetection: true,
   // 添加cookie支持
-  localePrefix: 'as-needed'
+  localePrefix: 'always'
 }; 

@@ -54,12 +54,6 @@ interface MOTDEditorProps {
   currentText?: string;
 }
 
-// 确保使用正确的 Node 引用
-const serializeToString = (nodes: Descendant[]) => {
-  if (!nodes || nodes.length === 0) return '';
-  return nodes.map(n => Node.string(n)).join('\n');
-};
-
 export default function MOTDEditor({
   initialValue,
   onChange,
@@ -69,6 +63,18 @@ export default function MOTDEditor({
 }: MOTDEditorProps) {
   const [editor] = useState(() => withReact(createEditor()));
   const t = useTranslations('editor');
+  
+  // 添加详细诊断日志
+  useEffect(() => {
+    console.log('===== MOTDEditor Component =====');
+    console.log('MOTDEditor loaded with translations:');
+    console.log('- inputMotd:', t('inputMotd'));
+    console.log('- formatToolbar:', t('formatToolbar'));
+    console.log('- format:', t('format'));
+    console.log('- minecraftFormat:', t('minecraftFormat'));
+    console.log('- miniMessageFormat:', t('miniMessageFormat'));
+    console.log('==============================');
+  }, [t]);
   
   // 添加内部编辑标志
   const isUserEditingRef = useRef(false);
@@ -250,7 +256,7 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
         <>
           {/* Minecraft 格式 - 颜色选择器 */}
           <div className="mb-3">
-            <div className="text-xs font-semibold mb-1">颜色:</div>
+            <div className="text-xs font-semibold mb-1">{t('colors.title')}:</div>
             <div className="grid grid-cols-8 gap-2">
               {colorCodes.map((color) => (
                 <button
@@ -274,7 +280,7 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
 
           {/* Minecraft 格式 - 格式按钮 */}
           <div>
-            <div className="text-xs font-semibold mb-1">格式:</div>
+            <div className="text-xs font-semibold mb-1">{t('formats.title')}:</div>
             <div className="flex flex-wrap gap-2">
               {formatButtons.map((button) => (
                 <button
@@ -295,25 +301,25 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
         <>
           {/* MiniMessage 格式 - 预设颜色 */}
           <div className="mb-3">
-            <div className="text-xs font-semibold mb-1">预设颜色:</div>
+            <div className="text-xs font-semibold mb-1">{t('colors.title')}:</div>
             <div className="grid grid-cols-8 gap-2 mb-2">
               {[
-                { name: '红色', color: '#FF5555', code: 'red' },
-                { name: '深红色', color: '#AA0000', code: 'dark_red' },
-                { name: '金色', color: '#FFAA00', code: 'gold' },
-                { name: '黄色', color: '#FFFF55', code: 'yellow' },
-                { name: '绿色', color: '#55FF55', code: 'green' },
-                { name: '深绿色', color: '#00AA00', code: 'dark_green' },
-                { name: '青色', color: '#55FFFF', code: 'aqua' },
-                { name: '深青色', color: '#00AAAA', code: 'dark_aqua' },
-                { name: '蓝色', color: '#5555FF', code: 'blue' },
-                { name: '深蓝色', color: '#0000AA', code: 'dark_blue' },
-                { name: '粉色', color: '#FF55FF', code: 'light_purple' },
-                { name: '紫色', color: '#AA00AA', code: 'dark_purple' },
-                { name: '白色', color: '#FFFFFF', code: 'white' },
-                { name: '灰色', color: '#AAAAAA', code: 'gray' },
-                { name: '深灰色', color: '#555555', code: 'dark_gray' },
-                { name: '黑色', color: '#000000', code: 'black' }
+                { name: t('colors.red'), color: '#FF5555', code: 'red' },
+                { name: t('colors.darkRed'), color: '#AA0000', code: 'dark_red' },
+                { name: t('colors.gold'), color: '#FFAA00', code: 'gold' },
+                { name: t('colors.yellow'), color: '#FFFF55', code: 'yellow' },
+                { name: t('colors.green'), color: '#55FF55', code: 'green' },
+                { name: t('colors.darkGreen'), color: '#00AA00', code: 'dark_green' },
+                { name: t('colors.aqua'), color: '#55FFFF', code: 'aqua' },
+                { name: t('colors.darkAqua'), color: '#00AAAA', code: 'dark_aqua' },
+                { name: t('colors.blue'), color: '#5555FF', code: 'blue' },
+                { name: t('colors.darkBlue'), color: '#0000AA', code: 'dark_blue' },
+                { name: t('colors.pink'), color: '#FF55FF', code: 'light_purple' },
+                { name: t('colors.purple'), color: '#AA00AA', code: 'dark_purple' },
+                { name: t('colors.white'), color: '#FFFFFF', code: 'white' },
+                { name: t('colors.gray'), color: '#AAAAAA', code: 'gray' },
+                { name: t('colors.darkGray'), color: '#555555', code: 'dark_gray' },
+                { name: t('colors.black'), color: '#000000', code: 'black' }
               ].map((color) => (
         <button
                   key={color.code}
@@ -336,7 +342,7 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
 
           {/* MiniMessage 格式 - 自定义颜色 */}
           <div className="mb-3">
-            <div className="text-xs font-semibold mb-1">自定义颜色:</div>
+            <div className="text-xs font-semibold mb-1">{t('colors.custom')}:</div>
             <div className="flex items-center gap-2">
               <ColorPicker 
                 color={selectedColor} 
@@ -348,9 +354,9 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
                   Transforms.insertText(editor, `<color:#${hexColor}>`);
                 }}
                 className="px-3 py-2 bg-gray-100 rounded border hover:bg-gray-200"
-                title="应用颜色"
+                title={t('colors.apply')}
               >
-                应用颜色 <span className="text-xs font-mono">&lt;color:#{selectedColor.replace('#', '')}&gt;</span>
+                {t('colors.apply')} <span className="text-xs font-mono">&lt;color:#{selectedColor.replace('#', '')}&gt;</span>
         </button>
             </div>
           </div>
@@ -358,12 +364,12 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
           {/* MiniMessage 格式 - 渐变色（带折叠功能） */}
           <div className="mb-3">
             <div className="flex items-center justify-between">
-              <div className="text-xs font-semibold mb-1">渐变色:</div>
+              <div className="text-xs font-semibold mb-1">{t('colors.gradient')}:</div>
         <button
                 onClick={() => setGradientExpanded(!gradientExpanded)}
                 className="text-xs text-blue-600 hover:underline flex items-center"
               >
-                {gradientExpanded ? '收起' : '展开'} 
+                {gradientExpanded ? t('colors.collapse') : t('colors.expand')} 
                 <span className="material-icons text-sm ml-1">
                   {gradientExpanded ? 'expand_less' : 'expand_more'}
           </span>
@@ -374,14 +380,14 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
               <div className="flex flex-col gap-2 mt-1 p-2 bg-gray-100 rounded border">
                 <div className="flex items-center gap-2">
                   <div className="flex items-center">
-                    <span className="text-xs mr-2">起始颜色:</span>
+                    <span className="text-xs mr-2">{t('colors.startColor')}:</span>
                     <ColorPicker 
                       color={startColor || "#FF5555"} 
                       onChange={(color: string) => setStartColor(color)} 
                     />
                   </div>
                   <div className="flex items-center ml-4">
-                    <span className="text-xs mr-2">结束颜色:</span>
+                    <span className="text-xs mr-2">{t('colors.endColor')}:</span>
                     <ColorPicker 
                       color={endColor || "#5555FF"} 
                       onChange={(color: string) => setEndColor(color)} 
@@ -395,9 +401,9 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
                     Transforms.insertText(editor, `<gradient:#${startHex}:#${endHex}>`);
                   }}
                   className="px-3 py-2 bg-white rounded border hover:bg-gray-50"
-                  title="应用渐变色"
+                  title={t('colors.applyGradient')}
                 >
-                  应用渐变色
+                  {t('colors.applyGradient')}
                   <div 
                     className={styles.gradientPreview}
                     style={{ 
@@ -413,14 +419,14 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
                 onClick={() => setGradientExpanded(true)}
                 className="w-full px-3 py-2 bg-gray-100 rounded border hover:bg-gray-200 text-sm"
               >
-                点击展开渐变色选项
+                {t('colors.clickToExpandGradient')}
               </button>
             )}
           </div>
 
           {/* MiniMessage 格式 - 格式按钮 */}
           <div>
-            <div className="text-xs font-semibold mb-1">格式:</div>
+            <div className="text-xs font-semibold mb-1">{t('formats.title')}:</div>
             <div className="flex flex-wrap gap-2">
               {miniMessageFormatButtons.map((button) => (
                 <button
@@ -439,20 +445,20 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
         <button
                 className="flex items-center p-2 rounded border hover:bg-gray-100 transition-colors"
                 onClick={() => Transforms.insertText(editor, '</color>')}
-                title="结束颜色标签"
+                title={t('formats.endColorTag')}
               >
                 <span className="material-icons mr-1">format_color_reset</span>
-                <span className="text-sm">结束颜色</span>
+                <span className="text-sm">{t('formats.endColor')}</span>
                 <span className="ml-1 text-xs font-mono">&lt;/color&gt;</span>
         </button>
               
         <button
                 className="flex items-center p-2 rounded border hover:bg-gray-100 transition-colors"
                 onClick={() => Transforms.insertText(editor, '</gradient>')}
-                title="结束渐变标签"
+                title={t('formats.endGradientTag')}
               >
                 <span className="material-icons mr-1">gradient</span>
-                <span className="text-sm">结束渐变</span>
+                <span className="text-sm">{t('formats.endGradient')}</span>
                 <span className="ml-1 text-xs font-mono">&lt;/gradient&gt;</span>
         </button>
       </div>

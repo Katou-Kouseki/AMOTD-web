@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { NextIntlClientProvider } from 'next-intl';
 import fs from 'fs';
 import path from 'path';
 
@@ -28,31 +27,37 @@ const zhMessages = JSON.parse(fs.readFileSync(zhMessagesPath, 'utf8'));
 const enMessagesPath = path.join(process.cwd(), 'messages', 'en.json');
 const enMessages = JSON.parse(fs.readFileSync(enMessagesPath, 'utf8'));
 
+// 打印消息内容示例进行验证
+console.log('EN Messages sample:', 
+  enMessages.title?.substring(0, 30),
+  enMessages.editor?.formatToolbar,
+  enMessages.home?.uploadIcon
+);
+console.log('ZH Messages sample:', 
+  zhMessages.title?.substring(0, 30),
+  zhMessages.editor?.formatToolbar,
+  zhMessages.home?.uploadIcon
+);
+
 export default async function RootLayout({
-  children,
-  params
+  children
 }: {
   children: React.ReactNode;
-  params: { locale?: string };
 }) {
-  // 确保使用固定的locale值，防止undefined
-  const locale = params.locale || 'zh';
-  
-  // 根据locale选择对应的语言文件
-  const messages = locale === 'en' ? enMessages : zhMessages;
+  // 这里不处理params，而是从渲染的子组件data-locale属性获取语言信息
+  // 国际化处理完全交给app/[locale]目录下的组件处理
+  // 这里只提供必要的provider
   
   return (
-    <html lang={locale}>
+    <html>
       <head>
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
       </head>
-      <NextIntlClientProvider locale={locale} messages={messages}>
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
-          {children}
-        </body>
-      </NextIntlClientProvider>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        {children}
+      </body>
     </html>
   );
 }

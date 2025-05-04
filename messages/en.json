@@ -1,7 +1,8 @@
 {
-  "title": "MOTD Online Generator — Free, Intuitive, Useful Minecraft MOTD Generator",
+  "title": "Minecraft MOTD Generator — Free, Intuitive, Useful Minecraft MOTD Generator",
   "description": "A modern Minecraft server MOTD generation and preview tool, supporting complete Minecraft formatting codes and custom server icons.",
   "common": {
+    "locale": "en",
     "language": "Language"
   },
   "editor": {
@@ -11,7 +12,9 @@
     "miniMessageFormat": "MiniMessage Format",
     "inputMinimessage": "Enter MiniMessage content...",
     "inputMotd": "Enter MOTD content...",
+    "loading": "Loading editor...",
     "colors": {
+      "title": "Colors",
       "black": "Black",
       "darkBlue": "Dark Blue",
       "darkGreen": "Dark Green",
@@ -27,14 +30,28 @@
       "red": "Red",
       "pink": "Pink",
       "yellow": "Yellow",
-      "white": "White"
+      "white": "White",
+      "custom": "Custom Color",
+      "apply": "Apply Color",
+      "gradient": "Gradient",
+      "expand": "Expand",
+      "collapse": "Collapse",
+      "startColor": "Start Color",
+      "endColor": "End Color",
+      "applyGradient": "Apply Gradient",
+      "clickToExpandGradient": "Click to expand gradient options"
     },
     "formats": {
+      "title": "Format",
       "bold": "Bold",
       "italic": "Italic",
       "underline": "Underline",
       "strikethrough": "Strikethrough",
-      "reset": "Reset"
+      "reset": "Reset",
+      "endColor": "End Color",
+      "endColorTag": "End Color Tag",
+      "endGradient": "End Gradient",
+      "endGradientTag": "End Gradient Tag"
     }
   },
   "home": {
@@ -55,6 +72,17 @@
     "expired": "Expired",
     "hours": "h",
     "minutes": "m",
-    "seconds": "s"
+    "seconds": "s",
+    "playersOnline": "Players Online",
+    "previewPlaceholder": "Enter text in the editor",
+    "currentFormat": "Current Format",
+    "textContent": "Text Content",
+    "contentLength": "Content Length",
+    "currentStyleUrl": "Current Style URL",
+    "generatedUrl": "Generated URL",
+    "copy": "Copy",
+    "savedStyleCodes": "Saved Style Codes",
+    "savedStyleCodesCount": "Saved Style Codes Count",
+    "cancel": "Cancel"
   }
 } 
