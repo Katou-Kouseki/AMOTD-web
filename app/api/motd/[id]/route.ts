@@ -3,24 +3,21 @@ import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 
-type Params = {
-  id: string;
-};
-
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Params }
-) {
+export async function GET(request: NextRequest) {
   try {
-    // 使用params.id前确保它是有效的
-    const id = params?.id;
+    // 从URL中提取ID，避免使用params
+    const url = request.url;
+    const urlParts = url.split('/');
+    const idFromUrl = urlParts[urlParts.length - 1];
+    
+    // 验证ID
+    const id = idFromUrl && typeof idFromUrl === 'string' ? idFromUrl : '';
+    
     if (!id) {
       return NextResponse.json({
         error: '缺少MOTD ID参数'
       }, { status: 400 });
     }
-    
-    console.log('获取到的ID:', id);
     
     if (id.length !== 8) {
       return NextResponse.json({
@@ -45,15 +42,17 @@ export async function GET(
       }, { status: 410 });
     }
     
+    // 确保返回正确的数据结构
     return NextResponse.json({
       icon: motdData.icon || "",
       type: motdData.type || "minecraft",
-      line1: motdData.line1 || "",
-      line2: motdData.line2 || ""
+      content: motdData.content || {
+        line1: motdData.line1 || '',
+        line2: motdData.line2 || ''
+      }
     });
     
-  } catch (error) {
-    console.error('获取MOTD数据出错:', error);
+  } catch {
     return NextResponse.json({
       error: '服务器内部错误'
     }, { status: 500 });

@@ -798,13 +798,28 @@ export default function Home() {
               <div className="absolute right-0 mt-2 py-2 w-36 bg-white rounded-md shadow-xl z-10">
                 <button 
                   onClick={() => {
-                    const newLocale = params.locale === 'zh' ? 'en' : 'zh';
-                    // 添加时间戳避免缓存
-                    window.location.href = `/${newLocale}?t=${Date.now()}`;
+                    // 获取当前路径和语言信息
+                    const currentPath = window.location.pathname;
+                    const newLocale = currentPath.includes('/zh/') || currentPath === '/zh' ? 'en' : 'zh';
+                    
+                    // 计算新路径：如果是根语言路径，则直接切换；否则保留路径的其余部分
+                    let newPath = `/${newLocale}`;
+                    
+                    if (currentPath.length > 3) {
+                      // 提取当前路径中除了语言部分的其余路径
+                      const restPath = currentPath.replace(/^\/(zh|en)/, '');
+                      newPath = `/${newLocale}${restPath}`;
+                    }
+                    
+                    // 添加时间戳避免缓存问题
+                    newPath += `?t=${Date.now()}`;
+                    
+                    // 应用新URL
+                    window.location.href = newPath;
                   }}
                   className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
                 >
-                  {params.locale === 'zh' ? 'English' : '中文'}
+                  {window.location.pathname.includes('/zh') ? 'English' : '中文'}
                 </button>
               </div>
             )}

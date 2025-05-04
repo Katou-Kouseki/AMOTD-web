@@ -3,14 +3,28 @@ import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string, locale: string } }
-) {
+// 定义支持的语言列表
+const LOCALES = ['en', 'zh'];
+const DEFAULT_LOCALE = 'zh';
+
+export async function GET(request: NextRequest) {
   try {
-    // 获取并验证参数
-    const id = params?.id;
-    const locale = params?.locale || 'zh';
+    // 从URL中提取ID和locale
+    const url = request.url;
+    const urlParts = url.split('/');
+    
+    // URL格式: /[locale]/api/motd/[id]
+    // 从末尾获取ID
+    const id = urlParts[urlParts.length - 1] || '';
+    
+    // 从路径中确定语言
+    let locale = DEFAULT_LOCALE;
+    for (const part of urlParts) {
+      if (LOCALES.includes(part)) {
+        locale = part;
+        break;
+      }
+    }
     
     if (!id) {
       const errorMessage = locale === 'en' ? 'Missing MOTD ID parameter' : '缺少MOTD ID参数';
@@ -18,8 +32,6 @@ export async function GET(
         error: errorMessage
       }, { status: 400 });
     }
-    
-    console.log('获取到的ID:', id);
     
     if (id.length !== 8) {
       const errorMessage = locale === 'en' ? 'Invalid MOTD ID' : '无效的MOTD ID';
@@ -50,14 +62,15 @@ export async function GET(
     return NextResponse.json({
       icon: motdData.icon || "",
       type: motdData.type || "minecraft",
-      line1: motdData.line1 || "",
-      line2: motdData.line2 || ""
+      content: motdData.content || {
+        line1: motdData.line1 || '',
+        line2: motdData.line2 || ''
+      }
     });
     
-  } catch (error) {
-    console.error('获取MOTD数据出错:', error);
-    const locale = params?.locale || 'zh';
-    const errorMessage = locale === 'en' ? 'Server internal error' : '服务器内部错误';
+  } catch {
+    // 使用默认语言返回错误信息
+    const errorMessage = '服务器内部错误'; // 默认使用中文
     return NextResponse.json({
       error: errorMessage
     }, { status: 500 });
