@@ -818,7 +818,7 @@ export default function Home() {
           </Link>
           
           {/* 黑曜石论坛链接 */}
-          <Link href="https://www.mcobs.com" target="_blank" aria-label="黑曜石论坛">
+          <Link href="https://www.mcobs.cn" target="_blank" aria-label="黑曜石论坛">
             <Image src="/mcobs.png" alt="黑曜石论坛" width={24} height={24} />
           </Link>
           
