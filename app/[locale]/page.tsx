@@ -300,7 +300,7 @@ export default function Home() {
           } else if (tag === '</gradient>') {
             // 处理渐变文本
             if (inGradientTag && currentGradientText) {
-              // 渐变文本处理 - 分段显示渐变效果
+              // 渐变文本处理 - 为每个字符分别创建带渐变颜色的片段
               if (currentSegment.text) {
                 segments.push({...currentSegment});
                 currentSegment.text = '';
@@ -309,35 +309,55 @@ export default function Home() {
               // 创建渐变效果
               const gradientLength = currentGradientText.length;
               if (gradientLength > 0) {
-                // 获取开始和结束颜色
-                const startColor = gradientStart.startsWith('#') ? gradientStart : '#FFFFFF';
-                const endColor = gradientEnd.startsWith('#') ? gradientEnd : '#FFFFFF';
+                // 获取开始和结束颜色，确保它们是有效的十六进制颜色
+                // 确保颜色值始终以#开头
+                const startColor = gradientStart.startsWith('#') ? gradientStart : `#${gradientStart}`;
+                const endColor = gradientEnd.startsWith('#') ? gradientEnd : `#${gradientEnd}`;
                 
-                // 解析颜色
-                const startR = parseInt(startColor.slice(1, 3), 16);
-                const startG = parseInt(startColor.slice(3, 5), 16);
-                const startB = parseInt(startColor.slice(5, 7), 16);
-                
-                const endR = parseInt(endColor.slice(1, 3), 16);
-                const endG = parseInt(endColor.slice(3, 5), 16);
-                const endB = parseInt(endColor.slice(5, 7), 16);
-                
-                // 为每个字符创建渐变颜色
-                for (let j = 0; j < gradientLength; j++) {
-                  const ratio = j / (gradientLength - 1 || 1);
+                try {
+                  // 解析颜色
+                  const startR = parseInt(startColor.slice(1, 3), 16) || 0;
+                  const startG = parseInt(startColor.slice(3, 5), 16) || 0;
+                  const startB = parseInt(startColor.slice(5, 7), 16) || 0;
                   
-                  // 计算当前字符的颜色
-                  const r = Math.round(startR + (endR - startR) * ratio);
-                  const g = Math.round(startG + (endG - startG) * ratio);
-                  const b = Math.round(startB + (endB - startB) * ratio);
+                  const endR = parseInt(endColor.slice(1, 3), 16) || 0;
+                  const endG = parseInt(endColor.slice(3, 5), 16) || 0;
+                  const endB = parseInt(endColor.slice(5, 7), 16) || 0;
                   
-                  // 转换为十六进制颜色
-                  const color = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-                  
-                  // 添加单个字符的片段
+                  // 为每个字符创建渐变颜色
+                  for (let j = 0; j < gradientLength; j++) {
+                    // 计算字符在渐变中的位置比例 - 确保即使只有一个字符也能应用渐变
+                    const ratio = gradientLength > 1 ? j / (gradientLength - 1) : 0.5;
+                    
+                    // 计算当前字符的颜色
+                    const r = Math.round(startR + (endR - startR) * ratio);
+                    const g = Math.round(startG + (endG - startG) * ratio);
+                    const b = Math.round(startB + (endB - startB) * ratio);
+                    
+                    // 正确格式化十六进制颜色值，确保两位数
+                    const rHex = r.toString(16).padStart(2, '0');
+                    const gHex = g.toString(16).padStart(2, '0');
+                    const bHex = b.toString(16).padStart(2, '0');
+                    
+                    // 转换为十六进制颜色
+                    const color = `#${rHex}${gHex}${bHex}`;
+                    
+                    // 添加单个字符的片段，保留其他格式属性
+                    segments.push({
+                      text: currentGradientText[j],
+                      color: color,
+                      bold: currentSegment.bold,
+                      italic: currentSegment.italic,
+                      underline: currentSegment.underline,
+                      strikethrough: currentSegment.strikethrough
+                    });
+                  }
+                } catch (error) {
+                  console.error('处理渐变颜色时出错:', error);
+                  // 错误处理：使用纯文本添加
                   segments.push({
-                    text: currentGradientText[j],
-                    color: color,
+                    text: currentGradientText,
+                    color: '#FFFFFF',
                     bold: currentSegment.bold,
                     italic: currentSegment.italic,
                     underline: currentSegment.underline,
@@ -346,7 +366,7 @@ export default function Home() {
                 }
               }
               
-              // 重置
+              // 重置渐变状态
               currentGradientText = '';
               inGradientTag = false;
             }
@@ -400,7 +420,11 @@ export default function Home() {
             // 提取颜色值
             const colorMatch = tag.match(/<color:([^>]+)>/);
             if (colorMatch && colorMatch[1]) {
-              currentSegment.color = colorMatch[1];
+              const colorValue = colorMatch[1];
+              // 确保颜色值总是以#开头
+              currentSegment.color = colorValue.startsWith('#') 
+                ? colorValue 
+                : `#${colorValue}`;
             }
           } else if (tag.startsWith('<gradient:')) {
             // 渐变色标签
@@ -412,8 +436,15 @@ export default function Home() {
             // 提取渐变色值
             const gradientMatch = tag.match(/<gradient:([^:]+):([^>]+)>/);
             if (gradientMatch && gradientMatch[1] && gradientMatch[2]) {
-              gradientStart = gradientMatch[1];
-              gradientEnd = gradientMatch[2];
+              // 确保颜色值始终以#开头
+              gradientStart = gradientMatch[1].startsWith('#') 
+                ? gradientMatch[1] 
+                : `#${gradientMatch[1]}`;
+                
+              gradientEnd = gradientMatch[2].startsWith('#') 
+                ? gradientMatch[2] 
+                : `#${gradientMatch[2]}`;
+              
               inGradientTag = true;
               currentGradientText = '';
             }
@@ -463,15 +494,51 @@ export default function Home() {
     
     // 如果还有未处理的渐变文本
     if (inGradientTag && currentGradientText) {
-      // 简化处理，使用渐变起始颜色
-      segments.push({
-        text: currentGradientText,
-        color: gradientStart || '#FFFFFF',
-        bold: currentSegment.bold,
-        italic: currentSegment.italic,
-        underline: currentSegment.underline,
-        strikethrough: currentSegment.strikethrough
-      });
+      // 应用渐变效果
+      const gradientLength = currentGradientText.length;
+      if (gradientLength > 0) {
+        // 获取开始和结束颜色
+        const startColor = gradientStart || '#FFFFFF';
+        const endColor = gradientEnd || '#FFFFFF';
+        
+        // 解析颜色
+        const startR = parseInt(startColor.slice(1, 3), 16) || 0;
+        const startG = parseInt(startColor.slice(3, 5), 16) || 0;
+        const startB = parseInt(startColor.slice(5, 7), 16) || 0;
+        
+        const endR = parseInt(endColor.slice(1, 3), 16) || 0;
+        const endG = parseInt(endColor.slice(3, 5), 16) || 0;
+        const endB = parseInt(endColor.slice(5, 7), 16) || 0;
+        
+        // 为每个字符创建渐变颜色
+        for (let j = 0; j < gradientLength; j++) {
+          // 计算字符在渐变中的位置比例
+          const ratio = gradientLength > 1 ? j / (gradientLength - 1) : 0;
+          
+          // 计算当前字符的颜色
+          const r = Math.round(startR + (endR - startR) * ratio);
+          const g = Math.round(startG + (endG - startG) * ratio);
+          const b = Math.round(startB + (endB - startB) * ratio);
+          
+          // 十六进制颜色值需要保证两位数
+          const rHex = r.toString(16).padStart(2, '0');
+          const gHex = g.toString(16).padStart(2, '0');
+          const bHex = b.toString(16).padStart(2, '0');
+          
+          // 转换为十六进制颜色
+          const color = `#${rHex}${gHex}${bHex}`;
+          
+          // 添加单个字符的片段
+          segments.push({
+            text: currentGradientText[j],
+            color: color,
+            bold: currentSegment.bold,
+            italic: currentSegment.italic,
+            underline: currentSegment.underline,
+            strikethrough: currentSegment.strikethrough
+          });
+        }
+      }
     }
     
     return segments;
