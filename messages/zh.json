@@ -60,6 +60,7 @@
     "uploadingIcon": "上传中...",
     "generateStyleCode": "生成样式码",
     "previewTitle": "预览",
+    "previewDisclaimer": "预览结果可能与实际游戏内显示效果不完全一致，仅供参考",
     "debugInfo": "调试信息",
     "fetchServerMotd": "获取服务器MOTD",
     "serverIp": "服务器IP",

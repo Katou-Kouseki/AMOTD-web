@@ -60,6 +60,7 @@
     "uploadingIcon": "Uploading...",
     "generateStyleCode": "Generate Style Code",
     "previewTitle": "Preview",
+    "previewDisclaimer": "The preview results may differ from actual in-game appearance, for reference only",
     "debugInfo": "Debug Info",
     "fetchServerMotd": "Fetch Server MOTD",
     "serverIp": "Server IP",
