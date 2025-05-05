@@ -28,12 +28,16 @@ function loadMessages(locale: string) {
   }
 }
 
-export default function LocaleLayout(props: {
+export default async function LocaleLayout({
+  children,
+  params,
+}: {
   children: React.ReactNode;
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }) {
-  // 从params中获取locale，确保用户可以切换语言
-  const locale = props.params.locale || DEFAULT_LOCALE;
+  // 使用await解析Promise
+  const resolvedParams = await params;
+  const locale = resolvedParams.locale || DEFAULT_LOCALE;
   
   // 加载翻译消息
   const messages = loadMessages(locale);
@@ -41,7 +45,7 @@ export default function LocaleLayout(props: {
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
       <div className="relative" data-locale={locale}>
-        {props.children}
+        {children}
       </div>
     </NextIntlClientProvider>
   );
