@@ -1,124 +1,125 @@
-# Minecraft MOTD 生成器
+# Minecraft MOTD Generator
+
+English | [中文](README_ZH.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub stars](https://img.shields.io/github/stars/x1aoren/amotd-web?style=social)](https://github.com/x1aoren/amotd-web/stargazers)
 
-## 简介
+## Introduction
 
-Minecraft MOTD 生成器是一款专业的服务器欢迎信息设计工具，为服务器管理员提供直观、强大的MOTD(Message of the Day)创建体验。支持标准Minecraft格式代码和MiniMessage格式，让您轻松打造个性化服务器欢迎信息，提升玩家第一印象。
+Minecraft MOTD Generator is a professional server welcome message design tool that provides server administrators with an intuitive and powerful MOTD (Message of the Day) creation experience. It supports both standard Minecraft format codes and MiniMessage format, allowing you to easily create personalized server welcome messages that enhance players' first impressions.
 
-无论是简洁的文本格式化，还是复杂的渐变色效果，本工具都能满足您的创意需求，同时确保MOTD在各种Minecraft客户端中正确显示。生成的样式码可直接应用于主流MOTD插件，无需复杂配置。
+Whether you need simple text formatting or complex gradient effects, this tool can meet your creative needs while ensuring your MOTD displays correctly across various Minecraft clients. The generated style codes can be directly applied to mainstream MOTD plugins without complex configuration.
 
-## 功能特点
+## Features
 
-- **双格式支持**：同时支持Minecraft原版格式代码(§)和MiniMessage高级格式
-- **实时可视化预览**：所见即所得的编辑体验，立即预览最终效果
-- **专业格式工具栏**：包含完整的颜色选择器和格式控制按钮
-- **服务器图标上传**：支持自定义64x64服务器图标上传和预览
-- **高级MiniMessage功能**：支持渐变色、自定义十六进制颜色等高级格式
-- **样式码生成与管理**：生成可共享的样式码，带自动过期机制
-- **资源优化保护**：限制生成频率，自动清理过期资源
-- **多样式码管理**：管理多个样式码，带倒计时显示和一键复制
-- **符合Minecraft UI风格**：遵循Minecraft设计语言，提供原汁原味的界面体验
+- **Dual Format Support**: Simultaneously supports Minecraft vanilla format codes (§) and advanced MiniMessage format
+- **Real-time Visual Preview**: WYSIWYG editing experience with immediate preview of the final effect
+- **Professional Formatting Toolbar**: Includes complete color picker and format control buttons
+- **Server Icon Upload**: Supports custom 64x64 server icon upload and preview
+- **Advanced MiniMessage Functionality**: Supports gradients, custom hex colors, and other advanced formatting
+- **Style Code Generation and Management**: Generates shareable style codes with automatic expiration mechanism
+- **Resource Optimization**: Limits generation frequency and automatically cleans up expired resources
+- **Multiple Style Code Management**: Manage multiple style codes with countdown display and one-click copying
+- **Minecraft UI Style**: Follows Minecraft design language for an authentic interface experience
 
-## 贡献者
+## Contributors
 
-感谢以下贡献者对本项目的支持：
+Thanks to the following contributors for their support of this project:
 
 <a href="https://github.com/x1aoren">
   <img src="https://github.com/x1aoren.png" width="50" height="50" alt="x1aoren" />
 </a>
 
-## 快速开始
+## Quick Start
 
 git clone https://github.com/x1aoren/amotd-web.git
 
 cd amotd-web
 
-### 安装依赖
+### Install Dependencies
 
 ```bash
 npm install
-# 或
+# or
 yarn install
 ```
 
-### 开发环境运行
+### Run Development Environment
 
 ```bash
 npm run dev
-# 或
+# or
 yarn dev
 ```
 
-打开 [http://localhost:3000](http://localhost:3000) 查看应用。
+Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-## 技术栈
+## Technology Stack
 
-- [Next.js](https://nextjs.org/) - React框架
-- [TypeScript](https://www.typescriptlang.org/) - 静态类型检查
-- [Tailwind CSS](https://tailwindcss.com/) - 样式系统
-- [Slate.js](https://www.slatejs.org/) - 富文本编辑器
+- [Next.js](https://nextjs.org/) - React framework
+- [TypeScript](https://www.typescriptlang.org/) - Static type checking
+- [Tailwind CSS](https://tailwindcss.com/) - Styling system
+- [Slate.js](https://www.slatejs.org/) - Rich text editor
 
-## 项目架构
+## Project Structure
 
 ```txt
 amotd-web/
 ├── app/                                 # Next.js App Router
-│   ├── [locale]/                        # 多语言路由
-│   │   ├── api/                         # 多语言API路由
-│   │   │   ├── fetch-motd/              # 获取服务器MOTD(多语言)
-│   │   │   ├── motd/                    # MOTD样式码(多语言)
-│   │   │   └── upload-icon/             # 图标上传(多语言)
-│   │   ├── layout.tsx                   # 布局组件(带多语言支持)
-│   │   ├── page.tsx                     # 主页面(多语言)
-│   │   └── redirect.ts                  # 语言重定向
-│   ├── api/                             # 全局API路由
-│   │   ├── fetch-motd/                  # 获取服务器MOTD
-│   │   ├── motd/                        # MOTD样式码
-│   │   └── upload-icon/                 # 图标上传
-│   ├── layout.tsx                       # 全局布局
-│   └── page.tsx                         # 全局入口(重定向)
-├── i18n/                                # 国际化配置
-│   └── request.js                       # 国际化请求配置
-├── i18n.js                              # 国际化主配置
-├── messages/                            # 翻译文件
-│   ├── en.json                          # 英文翻译
-│   └── zh.json                          # 中文翻译
-├── middleware.ts                        # Next.js中间件(处理语言)
-├── public/                              # 静态资源
-│   ├── motds/                           # 生成的MOTD数据(不纳入版本控制)
-│   └── uploads/                         # 上传的服务器图标(不纳入版本控制)
-├── src/                                 # 源代码
-│   ├── components/                      # 组件
-│   │   ├── ColorPicker.tsx              # 颜色选择器组件
-│   │   ├── LanguageSwitcher.tsx         # 语言切换器组件
-│   │   └── MOTDEditor.tsx               # MOTD编辑器组件
-│   ├── services/                        # 服务
-│   │   └── motd.ts                      # MOTD数据处理
-│   └── styles/                          # 样式文件
-│       └── editor.module.css            # 编辑器样式
-├── tailwind.config.js                   # Tailwind配置
-├── next.config.mjs                      # Next.js配置
-└── package.json                         # 项目依赖
+│   ├── [locale]/                        # Multi-language routes
+│   │   ├── api/                         # Multi-language API routes
+│   │   │   ├── fetch-motd/              # Fetch server MOTD (multi-language)
+│   │   │   ├── motd/                    # MOTD style codes (multi-language)
+│   │   │   └── upload-icon/             # Icon upload (multi-language)
+│   │   ├── layout.tsx                   # Layout component (with language support)
+│   │   ├── page.tsx                     # Main page (multi-language)
+│   │   └── redirect.ts                  # Language redirect
+│   ├── api/                             # Global API routes
+│   │   ├── fetch-motd/                  # Fetch server MOTD
+│   │   ├── motd/                        # MOTD style codes
+│   │   └── upload-icon/                 # Icon upload
+│   ├── layout.tsx                       # Global layout
+│   └── page.tsx                         # Global entry (redirect)
+├── i18n/                                # Internationalization config
+│   └── request.js                       # i18n request config
+├── i18n.js                              # Main i18n config
+├── messages/                            # Translation files
+│   ├── en.json                          # English translation
+│   └── zh.json                          # Chinese translation
+├── middleware.ts                        # Next.js middleware (language handling)
+├── public/                              # Static assets
+│   ├── motds/                           # Generated MOTD data (not in version control)
+│   └── uploads/                         # Uploaded server icons (not in version control)
+├── src/                                 # Source code
+│   ├── components/                      # Components
+│   │   ├── ColorPicker.tsx              # Color picker component
+│   │   ├── LanguageSwitcher.tsx         # Language switcher component
+│   │   └── MOTDEditor.tsx               # MOTD editor component
+│   ├── services/                        # Services
+│   │   └── motd.ts                      # MOTD data handling
+│   └── styles/                          # Style files
+│       └── editor.module.css            # Editor styles
+├── tailwind.config.js                   # Tailwind config
+├── next.config.mjs                      # Next.js config
+└── package.json                         # Project dependencies
 ```
 
-## 贡献指南
+## Contribution Guide
 
-欢迎对本项目做出贡献！
+Contributions to this project are welcome!
 
-### 贡献流程
+### Contribution Process
 
-1. Fork本仓库
-2. 创建您的分支 
-3. 提交您的更改 
-4. 推送到分支
-5. 打开Pull Request
+1. Fork this repository
+2. Create your branch
+3. Commit your changes
+4. Push to the branch
+5. Open a Pull Request
 
+### Code Standards
 
-### 代码规范
-
-- 使用TypeScript编写所有代码
-- 遵循eslint规则
-- 使用Prettier格式化代码
-- 对所有组件添加适当的注释
+- Write all code using TypeScript
+- Follow eslint rules
+- Use Prettier for code formatting
+- Add appropriate comments to all components
