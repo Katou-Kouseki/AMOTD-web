@@ -742,7 +742,8 @@ export default function Home() {
         color: segment.color,
         fontWeight: segment.bold ? 'bold' : 'normal',
         fontStyle: segment.italic ? 'italic' : 'normal',
-        textDecoration: `${segment.underline ? 'underline' : ''} ${segment.strikethrough ? 'line-through' : ''}`.trim()
+        textDecoration: `${segment.underline ? 'underline' : ''} ${segment.strikethrough ? 'line-through' : ''}`.trim(),
+        whiteSpace: 'pre'  // 保留空格和换行符
       };
       
       return (
@@ -943,7 +944,7 @@ export default function Home() {
                 </div>
                 
                 {/* MOTD内容 */}
-                <div className="text-white min-h-[1.8rem] text-sm">
+                <div className="text-white min-h-[1.8rem] text-sm overflow-x-auto" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                   {formattedSegments.length > 0 && formattedSegments[0].length > 0 ? (
                     <div className="mb-0.5">{renderFormattedText(formattedSegments[0])}</div>
                   ) : (
