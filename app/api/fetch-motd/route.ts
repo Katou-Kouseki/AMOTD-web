@@ -285,11 +285,9 @@ function extractMiniMessageFormat(description: MCTextComponent): string {
   
   // 处理基本文本及其格式
   const baseText = description.text || '';
-  let hasFormat = false;
   
   // 添加格式标签
   if (description.color) {
-    hasFormat = true;
     if (description.color.startsWith('#')) {
       result += `<color:${description.color}>`;
     } else {
@@ -298,27 +296,22 @@ function extractMiniMessageFormat(description: MCTextComponent): string {
   }
   
   if (description.bold) {
-    hasFormat = true;
     result += '<bold>';
   }
   
   if (description.italic) {
-    hasFormat = true;
     result += '<italic>';
   }
   
   if (description.underlined) {
-    hasFormat = true;
     result += '<underline>';
   }
   
   if (description.strikethrough) {
-    hasFormat = true;
     result += '<strikethrough>';
   }
   
   if (description.obfuscated) {
-    hasFormat = true;
     result += '<obfuscated>';
   }
   
@@ -686,6 +679,73 @@ function convertMinecraftGradientToMiniMessage(text: string): string {
   return result;
 }
 
+// 添加一个新函数，将所有Minecraft格式代码转换为MiniMessage格式
+function convertMinecraftToMiniMessage(text: string): string {
+  if (!text) return text;
+  
+  // 先检查是否包含Minecraft格式代码
+  if (!text.includes('§')) return text;
+  
+  // 先尝试使用渐变转换函数处理渐变色
+  const hasGradient = detectGradient(text);
+  if (hasGradient) {
+    text = convertMinecraftGradientToMiniMessage(text);
+  }
+  
+  // 处理普通颜色代码
+  let result = text;
+  
+  // 1. 处理格式代码
+  const formatMap: Record<string, string> = {
+    'k': '<obfuscated>$1</obfuscated>',
+    'l': '<bold>$1</bold>',
+    'o': '<italic>$1</italic>',
+    'n': '<underlined>$1</underlined>',
+    'm': '<strikethrough>$1</strikethrough>',
+    'r': '<reset>$1</reset>'
+  };
+  
+  // 查找所有格式代码和它们后面的文本，直到下一个§
+  for (const [code, tag] of Object.entries(formatMap)) {
+    const regex = new RegExp(`§${code}([^§]*)`, 'g');
+    result = result.replace(regex, tag);
+  }
+  
+  // 2. 处理颜色代码
+  const colorMap: Record<string, string> = {
+    '0': '#000000', // black
+    '1': '#0000AA', // dark_blue
+    '2': '#00AA00', // dark_green
+    '3': '#00AAAA', // dark_aqua
+    '4': '#AA0000', // dark_red
+    '5': '#AA00AA', // dark_purple
+    '6': '#FFAA00', // gold
+    '7': '#AAAAAA', // gray
+    '8': '#555555', // dark_gray
+    '9': '#5555FF', // blue
+    'a': '#55FF55', // green
+    'b': '#55FFFF', // aqua
+    'c': '#FF5555', // red
+    'd': '#FF55FF', // light_purple
+    'e': '#FFFF55', // yellow
+    'f': '#FFFFFF'  // white
+  };
+  
+  // 使用正则表达式匹配颜色代码和之后的内容
+  for (const [code, hex] of Object.entries(colorMap)) {
+    const regex = new RegExp(`§${code}([^§]*)`, 'g');
+    result = result.replace(regex, `<color:${hex}>$1</color>`);
+  }
+  
+  // 3. 处理十六进制颜色代码
+  result = result.replace(/§#([0-9A-Fa-f]{6})([^§]*)/g, '<color:#$1>$2</color>');
+  
+  // 4. 清理结果，去除任何残留的Minecraft格式代码
+  result = result.replace(/§[0-9a-fklmnor]/g, '');
+  
+  return result;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
@@ -776,24 +836,28 @@ export async function POST(request: NextRequest) {
         }
       });
       
-      // 在POST处理中增强渐变色的检测和处理
+      // 在POST处理中增强格式转换
       if (result && result.rawText) {
         // 检测是否包含渐变色 - 增加对多种格式的支持
         const hasGradient = detectGradient(result.rawText) ||
                             (result.rawText.match(/§[0-9a-f]/) || []).length >= 3;
         
-        if (hasGradient) {
-          console.log('检测到渐变色MOTD，自动转换为MiniMessage格式');
+        // 如果检测到渐变色或者请求格式是minimessage，转换为MiniMessage格式
+        if (hasGradient || format === 'minimessage') {
+          console.log('转换为MiniMessage格式:', format === 'minimessage' ? '根据请求格式' : '检测到渐变色');
           
-          // 无论请求格式如何，发现渐变色都转换为MiniMessage
-          result.rawText = convertMinecraftGradientToMiniMessage(result.rawText);
+          // 使用新的转换函数进行完整转换，而不仅仅是渐变色
+          if (result.rawText.includes('§')) {
+            if (hasGradient) {
+              result.rawText = convertMinecraftGradientToMiniMessage(result.rawText);
+            } else if (format === 'minimessage') {
+              result.rawText = convertMinecraftToMiniMessage(result.rawText);
+            }
+          }
+          
+          // 标记为MiniMessage格式
           result.isMinimessage = true;
         }
-      }
-      
-      // 如果请求格式是minimessage，确保返回结果标记为minimessage
-      if (format === 'minimessage' && result && result.rawText) {
-        result.isMinimessage = true;
       }
       
       return NextResponse.json(result);
