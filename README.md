@@ -62,40 +62,46 @@ yarn dev
 
 ## 项目架构
 
+```txt
 amotd-web/
-- app/                     # Next.js App Router
-
-  - api/                   # API路由
-
-    - motd/                # MOTD相关API
-
-    - upload-icon/         # 图标上传API
-
-  - page.tsx               # 主页面
-
-- public/                  # 静态资源
-
-  - uploads/               # 上传的服务器图标 (不纳入版本控制)
-
-  - motds/                 # 生成的MOTD数据 (不纳入版本控制)
-
-- src/                     # 源代码
-
-  - components/            # 组件
-
-    - MOTDEditor.tsx       # MOTD编辑器组件
-    
-    - ColorPicker.tsx      # 颜色选择器组件
-
-  - services/              # 服务
-
-    - motd.ts              # MOTD数据处理
-
-    - upload.ts            # 文件上传处理
-
-- tailwind.config.js       # Tailwind配置
-
-
+├── app/                                 # Next.js App Router
+│   ├── [locale]/                        # 多语言路由
+│   │   ├── api/                         # 多语言API路由
+│   │   │   ├── fetch-motd/              # 获取服务器MOTD(多语言)
+│   │   │   ├── motd/                    # MOTD样式码(多语言)
+│   │   │   └── upload-icon/             # 图标上传(多语言)
+│   │   ├── layout.tsx                   # 布局组件(带多语言支持)
+│   │   ├── page.tsx                     # 主页面(多语言)
+│   │   └── redirect.ts                  # 语言重定向
+│   ├── api/                             # 全局API路由
+│   │   ├── fetch-motd/                  # 获取服务器MOTD
+│   │   ├── motd/                        # MOTD样式码
+│   │   └── upload-icon/                 # 图标上传
+│   ├── layout.tsx                       # 全局布局
+│   └── page.tsx                         # 全局入口(重定向)
+├── i18n/                                # 国际化配置
+│   └── request.js                       # 国际化请求配置
+├── i18n.js                              # 国际化主配置
+├── messages/                            # 翻译文件
+│   ├── en.json                          # 英文翻译
+│   └── zh.json                          # 中文翻译
+├── middleware.ts                        # Next.js中间件(处理语言)
+├── public/                              # 静态资源
+│   ├── motds/                           # 生成的MOTD数据(不纳入版本控制)
+│   └── uploads/                         # 上传的服务器图标(不纳入版本控制)
+├── src/                                 # 源代码
+│   ├── components/                      # 组件
+│   │   ├── ColorPicker.tsx              # 颜色选择器组件
+│   │   ├── LanguageSwitcher.tsx         # 语言切换器组件
+│   │   └── MOTDEditor.tsx               # MOTD编辑器组件
+│   ├── services/                        # 服务
+│   │   └── motd.ts                      # MOTD数据处理
+│   └── styles/                          # 样式文件
+│       └── editor.module.css            # 编辑器样式
+├── tailwind.config.js                   # Tailwind配置
+├── next.config.mjs                      # Next.js配置
+└── package.json                         # 项目依赖
+```
 
 ## 贡献指南
 
