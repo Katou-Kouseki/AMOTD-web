@@ -717,9 +717,38 @@ export default function Home() {
       if (result.success && result.motd) {
         setMotdText(result.motd);
         
-        // 如果有图标，也设置图标
+        // 如果有图标，也设置图标并上传处理
         if (result.icon) {
+          // 先设置图标预览
           setServerIcon(result.icon);
+          
+          try {
+            // 将Base64图标数据转换为Blob并上传
+            const iconData = result.icon;
+            
+            // 解析Base64数据
+            const base64Response = await fetch(iconData);
+            const blob = await base64Response.blob();
+            
+            // 创建FormData
+            const formData = new FormData();
+            formData.append('file', blob, 'server_icon.png');
+            
+            // 上传图标
+            const uploadResponse = await fetch('/api/upload-icon', {
+              method: 'POST',
+              body: formData
+            });
+            
+            const uploadResult = await uploadResponse.json();
+            
+            if (uploadResult.success) {
+              // 设置图标路径
+              setIconPath(uploadResult.fileUrl);
+            }
+          } catch (error) {
+            console.error('上传服务器图标失败:', error);
+          }
         }
         
         // 如果服务器返回了格式类型，更新编辑器格式
@@ -1016,7 +1045,7 @@ export default function Home() {
                       <span className="text-xs text-gray-500">{item.countdown}</span>
                     </div>
                     <button
-                      onClick={() => copyToClipboard(item.url)}
+                      onClick={() => copyToClipboard(item.id)}
                       className="text-blue-600 hover:text-blue-800 p-1"
                       title={t('home.copy')}
                     >
