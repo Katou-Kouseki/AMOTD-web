@@ -30,11 +30,10 @@ function loadMessages(locale: string) {
 
 export default function LocaleLayout(props: {
   children: React.ReactNode;
-  params: Record<string, unknown>;
+  params: { locale: string };
 }) {
-  // 对于SSR，我们不能依赖客户端的路径或头信息
-  // 而是使用默认语言并完全跳过动态参数
-  const locale = DEFAULT_LOCALE;
+  // 从params中获取locale，确保用户可以切换语言
+  const locale = props.params.locale || DEFAULT_LOCALE;
   
   // 加载翻译消息
   const messages = loadMessages(locale);

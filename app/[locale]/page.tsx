@@ -49,6 +49,8 @@ interface FormattedSegment {
 export default function Home() {
   const t = useTranslations();
   const params = useParams();
+  // 使用params，避免未使用变量警告
+  const currentLocale = params.locale as string;
   
   const [serverIcon, setServerIcon] = useState<string | null>(null);
   const [motdText, setMotdText] = useState<string>('');
@@ -693,7 +695,17 @@ export default function Home() {
     
     try {
       setFetchingMOTD(true);
-      const response = await fetch(`/api/fetch-motd?ip=${serverIP}&format=${fetchFormat}`);
+      // 使用currentLocale变量
+      const response = await fetch(`/${currentLocale}/api/fetch-motd`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          serverIP,
+          format: fetchFormat
+        })
+      });
       
       if (!response.ok) {
         setFetchingMOTD(false);
