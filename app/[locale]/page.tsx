@@ -1122,15 +1122,15 @@ export default function Home() {
       
       {/* 页脚 */}
       <footer className="mt-16 pt-8 border-t border-gray-200 dark:border-gray-700 text-center text-gray-600 dark:text-gray-400 text-sm">
-        <p>Minecraft MOTD 生成器 v0.4.0</p>
+        <p>Minecraft MOTD 生成器 v0.5.0</p>
         <div className="mt-2 flex justify-center items-center">
           <a href="http://www.beian.gov.cn/portal/registerSystemInfo" target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center mx-2">
             <Image src="/beian.png" alt="备案" width={16} height={16} className="mr-1 dark:invert" />
-            粤公网安备42050302000448号
+            鄂公网安备42050302000448号
           </a>
           <span className="mx-2">•</span>
           <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="hover:underline">
-            鄂ICP备20240860号
+          鄂ICP备2024086021号-1
           </a>
         </div>
       </footer>
