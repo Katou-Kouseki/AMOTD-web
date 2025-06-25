@@ -61,6 +61,7 @@
     "generateStyleCode": "Generate Style Code",
     "previewTitle": "Preview",
     "previewDisclaimer": "The preview results may differ from actual in-game appearance, for reference only",
+    "styleCodeNote": "Style codes can only be used with the amotd plugin (https://mcobs.cn/thread-604-1-1.html)",
     "debugInfo": "Debug Info",
     "fetchServerMotd": "Fetch Server MOTD",
     "serverIp": "Server IP",
