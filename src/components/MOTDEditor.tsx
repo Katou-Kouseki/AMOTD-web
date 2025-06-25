@@ -150,7 +150,7 @@ export default function MOTDEditor({
         onFormatChange={onFormatChange} 
       />
       <Editable
-        className="min-h-[200px] p-4 border rounded bg-gray-100"
+        className="min-h-[200px] p-4 border rounded bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
         placeholder={isMinimessage ? t('inputMinimessage') : t('inputMotd')}
         // 添加键盘事件处理，确保编辑时标记为用户编辑
         onKeyDown={() => {
@@ -217,14 +217,14 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
   const [gradientExpanded, setGradientExpanded] = useState(false);
 
   return (
-    <div className="p-2 bg-gray-200 rounded-t mb-1">
+    <div className="p-2 bg-gray-200 dark:bg-gray-700 rounded-t mb-1">
       {/* 格式选择器 */}
       <div className="flex justify-between items-center mb-2">
-        <div className="text-sm font-bold">{t('formatToolbar')}</div>
+        <div className="text-sm font-bold dark:text-white">{t('formatToolbar')}</div>
         <div className="flex items-center">
-          <span className="mr-2 text-sm">{t('format')}:</span>
+          <span className="mr-2 text-sm dark:text-white">{t('format')}:</span>
           <select 
-            className="border rounded px-2 py-1 text-sm bg-white"
+            className="border rounded px-2 py-1 text-sm bg-white dark:bg-gray-800 dark:text-white dark:border-gray-600"
             value={isMinimessage ? "minimessage" : "minecraft"}
             onChange={(e) => {
               if (onFormatChange) {
@@ -244,7 +244,7 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
         <>
           {/* Minecraft 格式 - 颜色选择器 */}
           <div className="mb-3">
-            <div className="text-xs font-semibold mb-1">{t('colors.title')}:</div>
+            <div className="text-xs font-semibold mb-1 dark:text-white">{t('colors.title')}:</div>
             <div className="grid grid-cols-8 gap-2">
               {colorCodes.map((color) => (
                 <button
@@ -268,12 +268,12 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
 
           {/* Minecraft 格式 - 格式按钮 */}
           <div>
-            <div className="text-xs font-semibold mb-1">{t('formats.title')}:</div>
+            <div className="text-xs font-semibold mb-1 dark:text-white">{t('formats.title')}:</div>
             <div className="flex flex-wrap gap-2">
               {formatButtons.map((button) => (
                 <button
                   key={button.code}
-                  className="flex items-center p-2 rounded border hover:bg-gray-100 transition-colors"
+                  className="flex items-center p-2 rounded border hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 transition-colors"
                   onClick={() => Transforms.insertText(editor, `&${button.code}`)}
                   title={button.name}
                 >
@@ -289,7 +289,7 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
         <>
           {/* MiniMessage 格式 - 预设颜色 */}
           <div className="mb-3">
-            <div className="text-xs font-semibold mb-1">{t('colors.title')}:</div>
+            <div className="text-xs font-semibold mb-1 dark:text-white">{t('colors.title')}:</div>
             <div className="grid grid-cols-8 gap-2 mb-2">
               {[
                 { name: t('colors.red'), color: '#FF5555', code: 'red' },
@@ -311,7 +311,7 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
               ].map((color) => (
         <button
                   key={color.code}
-                  className="flex flex-col items-center p-2 rounded border hover:bg-gray-100 transition-colors"
+                  className="flex flex-col items-center p-2 rounded border hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 transition-colors"
                   onClick={() => Transforms.insertText(editor, `<color:${color.code}>`)}
                   title={color.name}
                 >
@@ -330,7 +330,7 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
 
           {/* MiniMessage 格式 - 自定义颜色 */}
           <div className="mb-3">
-            <div className="text-xs font-semibold mb-1">{t('colors.custom')}:</div>
+            <div className="text-xs font-semibold mb-1 dark:text-white">{t('colors.custom')}:</div>
             <div className="flex items-center gap-2">
               <ColorPicker 
                 color={selectedColor} 
@@ -341,7 +341,7 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
                   const hexColor = selectedColor.replace('#', '');
                   Transforms.insertText(editor, `<color:#${hexColor}>`);
                 }}
-                className="px-3 py-2 bg-gray-100 rounded border hover:bg-gray-200"
+                className="px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 rounded border hover:bg-gray-200 dark:hover:bg-gray-600"
                 title={t('colors.apply')}
               >
                 {t('colors.apply')} <span className="text-xs font-mono">&lt;color:#{selectedColor.replace('#', '')}&gt;</span>
@@ -352,10 +352,10 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
           {/* MiniMessage 格式 - 渐变色（带折叠功能） */}
           <div className="mb-3">
             <div className="flex items-center justify-between">
-              <div className="text-xs font-semibold mb-1">{t('colors.gradient')}:</div>
+              <div className="text-xs font-semibold mb-1 dark:text-white">{t('colors.gradient')}:</div>
         <button
                 onClick={() => setGradientExpanded(!gradientExpanded)}
-                className="text-xs text-blue-600 hover:underline flex items-center"
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center"
               >
                 {gradientExpanded ? t('colors.collapse') : t('colors.expand')} 
                 <span className="material-icons text-sm ml-1">
@@ -365,17 +365,17 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
             </div>
             
             {gradientExpanded && (
-              <div className="flex flex-col gap-2 mt-1 p-2 bg-gray-100 rounded border">
+              <div className="flex flex-col gap-2 mt-1 p-2 bg-gray-100 dark:bg-gray-700 dark:border-gray-600 rounded border">
                 <div className="flex items-center gap-2">
                   <div className="flex items-center">
-                    <span className="text-xs mr-2">{t('colors.startColor')}:</span>
+                    <span className="text-xs mr-2 dark:text-gray-200">{t('colors.startColor')}:</span>
                     <ColorPicker 
                       color={startColor || "#FF5555"} 
                       onChange={(color: string) => setStartColor(color)} 
                     />
                   </div>
                   <div className="flex items-center ml-4">
-                    <span className="text-xs mr-2">{t('colors.endColor')}:</span>
+                    <span className="text-xs mr-2 dark:text-gray-200">{t('colors.endColor')}:</span>
                     <ColorPicker 
                       color={endColor || "#5555FF"} 
                       onChange={(color: string) => setEndColor(color)} 
@@ -388,7 +388,7 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
                     const endHex = endColor?.replace('#', '') || "5555FF";
                     Transforms.insertText(editor, `<gradient:#${startHex}:#${endHex}>`);
                   }}
-                  className="px-3 py-2 bg-white rounded border hover:bg-gray-50"
+                  className="px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 rounded border hover:bg-gray-50 dark:hover:bg-gray-600"
                   title={t('colors.applyGradient')}
                 >
                   {t('colors.applyGradient')}
@@ -405,7 +405,7 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
             {!gradientExpanded && (
               <button
                 onClick={() => setGradientExpanded(true)}
-                className="w-full px-3 py-2 bg-gray-100 rounded border hover:bg-gray-200 text-sm"
+                className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 rounded border hover:bg-gray-200 dark:hover:bg-gray-600 text-sm"
               >
                 {t('colors.clickToExpandGradient')}
               </button>
@@ -414,12 +414,12 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
 
           {/* MiniMessage 格式 - 格式按钮 */}
           <div>
-            <div className="text-xs font-semibold mb-1">{t('formats.title')}:</div>
+            <div className="text-xs font-semibold mb-1 dark:text-white">{t('formats.title')}:</div>
             <div className="flex flex-wrap gap-2">
               {miniMessageFormatButtons.map((button) => (
                 <button
                   key={button.code}
-                  className="flex items-center p-2 rounded border hover:bg-gray-100 transition-colors"
+                  className="flex items-center p-2 rounded border hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 transition-colors"
                   onClick={() => Transforms.insertText(editor, button.code)}
                   title={button.name}
                 >
@@ -431,7 +431,7 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
               
               {/* 添加结束标签按钮 */}
         <button
-                className="flex items-center p-2 rounded border hover:bg-gray-100 transition-colors"
+                className="flex items-center p-2 rounded border hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 transition-colors"
                 onClick={() => Transforms.insertText(editor, '</color>')}
                 title={t('formats.endColorTag')}
               >
@@ -441,7 +441,7 @@ export const FormatToolbar = ({ isMinimessage, onFormatChange }: FormatToolbarPr
         </button>
               
         <button
-                className="flex items-center p-2 rounded border hover:bg-gray-100 transition-colors"
+                className="flex items-center p-2 rounded border hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 transition-colors"
                 onClick={() => Transforms.insertText(editor, '</gradient>')}
                 title={t('formats.endGradientTag')}
               >

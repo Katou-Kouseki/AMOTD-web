@@ -7,6 +7,7 @@ import { Descendant } from 'slate';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
+
 // 使用动态导入解决服务端渲染问题
 const MOTDEditor = dynamic(
   () => import('../../src/components/MOTDEditor'),
@@ -806,9 +807,9 @@ export default function Home() {
   }, [languageDropdownOpen]);
 
   return (
-    <main className="max-w-screen-xl mx-auto py-8 px-4">
+    <main className="max-w-screen-xl mx-auto py-8 px-4 dark:bg-gray-900">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold font-minecraft">{t('title')}</h1>
+        <h1 className="text-3xl font-bold font-minecraft dark:text-white">{t('title')}</h1>
         <div className="flex space-x-4 items-center">
           {/* GitHub链接 */}
           <Link href="https://github.com/x1aoren/AMOTD-web" target="_blank" aria-label="GitHub">
@@ -825,6 +826,7 @@ export default function Home() {
             <Image src="/mcobs.png" alt="黑曜石论坛" width={24} height={24} />
           </Link>
           
+
           {/* 语言切换器 - 改进版本 */}
           <div className="relative" ref={languageDropdownRef}>
             <button 
@@ -837,7 +839,7 @@ export default function Home() {
               </svg>
             </button>
             {languageDropdownOpen && (
-              <div className="absolute right-0 mt-2 py-2 w-36 bg-white rounded-md shadow-xl z-10">
+              <div className="absolute right-0 mt-2 py-2 w-36 bg-white dark:bg-gray-800 rounded-md shadow-xl z-10">
                 <button 
                   onClick={() => {
                     // 获取当前路径和语言信息
@@ -859,7 +861,7 @@ export default function Home() {
                     // 应用新URL
                     window.location.href = newPath;
                   }}
-                  className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                  className="block w-full text-left px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   {window.location.pathname.includes('/zh') ? 'English' : '中文'}
                 </button>
@@ -872,12 +874,12 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* 左侧编辑区域 */}
         <div>
-          <h2 className="text-xl font-bold mb-4">{t('editor.formatToolbar')}</h2>
+          <h2 className="text-xl font-bold mb-4 dark:text-white">{t('editor.formatToolbar')}</h2>
           
           {/* 使用MOTDEditor自带的格式工具栏 */}
           <div className="mb-4">
             {(!editorMounted || editorLoading) && (
-              <div className="min-h-[200px] p-4 border rounded bg-gray-100">
+              <div className="min-h-[200px] p-4 border rounded bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700">
                 {t('editor.loading')}
               </div>
             )}
@@ -911,7 +913,7 @@ export default function Home() {
         {/* 右侧预览区域 */}
         <div>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">{t('home.previewTitle')}</h2>
+            <h2 className="text-xl font-bold dark:text-white">{t('home.previewTitle')}</h2>
             {/* 将获取服务器MOTD按钮移至预览标题右侧 */}
             <button 
               onClick={() => setShowFetchModal(true)}
@@ -988,7 +990,7 @@ export default function Home() {
           </div>
           
           {/* 预览提示信息 */}
-          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 text-sm flex items-start">
+          <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg text-yellow-700 dark:text-yellow-300 text-sm flex items-start">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
             </svg>
@@ -996,7 +998,7 @@ export default function Home() {
           </div>
           
           {/* 样式码使用提示 */}
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm flex items-start">
+          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg text-blue-700 dark:text-blue-300 text-sm flex items-start">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
             </svg>
@@ -1006,16 +1008,16 @@ export default function Home() {
           {/* 样式码结果 - 显示在预览框下方 */}
           {motdUrl && (
             <div className="mt-3 mb-4">
-              <div className="p-3 bg-gray-100 rounded-lg shadow-sm border border-gray-200">
-                <div className="font-medium mb-2 flex justify-between items-center">
+              <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <div className="font-medium mb-2 flex justify-between items-center dark:text-white">
                   <span>{t('home.generatedUrl')}:</span>
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm bg-blue-100 px-2 py-0.5 rounded text-blue-800 font-mono">
+                    <span className="text-sm bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 rounded text-blue-800 dark:text-blue-200 font-mono">
                       {motdUrl.split('/').pop()}
                     </span>
                     <button 
                       onClick={() => copyToClipboard(motdUrl)}
-                      className="text-blue-600 hover:text-blue-800"
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                       title={t('home.copy')}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -1029,7 +1031,7 @@ export default function Home() {
                   type="text"
                   readOnly
                   value={motdUrl}
-                  className="w-full p-2 bg-white border rounded text-sm text-gray-700"
+                  className="w-full p-2 bg-white dark:bg-gray-700 border rounded text-sm text-gray-700 dark:text-gray-200 dark:border-gray-600"
                   aria-label={t('home.generatedUrl')}
                   onClick={(e) => (e.target as HTMLInputElement).select()}
                 />
@@ -1039,22 +1041,22 @@ export default function Home() {
           
           {/* 样式码浏览框 - 调整样式 */}
           {motdUrls.length > 0 && (
-            <div className="border rounded-lg divide-y bg-white shadow-sm">
-              <div className="px-3 py-2 bg-gray-50 font-medium text-gray-700 rounded-t-lg">
+            <div className="border rounded-lg divide-y bg-white dark:bg-gray-800 dark:border-gray-700 shadow-sm dark:divide-gray-700">
+              <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 font-medium text-gray-700 dark:text-gray-200 rounded-t-lg">
                 {t('home.savedStyleCodes')}: {motdUrls.length}
               </div>
-              <div className="max-h-[200px] overflow-y-auto divide-y">
+              <div className="max-h-[200px] overflow-y-auto divide-y dark:divide-gray-700">
                 {motdUrls.map((item) => (
                   <div key={item.id} className="px-3 py-2 flex justify-between items-center">
                     <div className="flex items-center space-x-2">
-                      <span className="font-mono bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-sm">
+                      <span className="font-mono bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded text-sm">
                         {item.id}
                       </span>
-                      <span className="text-xs text-gray-500">{item.countdown}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{item.countdown}</span>
                     </div>
                     <button
                       onClick={() => copyToClipboard(item.id)}
-                      className="text-blue-600 hover:text-blue-800 p-1"
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 p-1"
                       title={t('home.copy')}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -1071,25 +1073,25 @@ export default function Home() {
           {/* 获取服务器MOTD弹窗 - 添加毛玻璃效果 */}
           {showFetchModal && (
             <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-md bg-black/30">
-              <div ref={modalRef} className="bg-white/90 p-6 rounded-lg shadow-lg max-w-md w-full backdrop-blur-sm border border-gray-200">
-                <h3 className="font-bold text-xl mb-4">{t('home.fetchServerMotd')}</h3>
+              <div ref={modalRef} className="bg-white/90 dark:bg-gray-800/90 p-6 rounded-lg shadow-lg max-w-md w-full backdrop-blur-sm border border-gray-200 dark:border-gray-700">
+                <h3 className="font-bold text-xl mb-4 dark:text-white">{t('home.fetchServerMotd')}</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block mb-1">{t('home.serverIp')}:</label>
+                    <label className="block mb-1 dark:text-gray-200">{t('home.serverIp')}:</label>
                     <input
                       type="text"
                       value={serverIP}
                       onChange={(e) => setServerIP(e.target.value)}
-                      className="w-full p-2 border rounded"
+                      className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
                       placeholder="play.example.com"
                     />
                   </div>
                   <div className="flex items-center">
-                    <label className="mr-2">{t('home.formatType')}:</label>
+                    <label className="mr-2 dark:text-gray-200">{t('home.formatType')}:</label>
                     <select
                       value={fetchFormat}
                       onChange={(e) => setFetchFormat(e.target.value)}
-                      className="border rounded p-2"
+                      className="border rounded p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
                       aria-label={t('home.formatType')}
                     >
                       <option value="minecraft">Minecraft</option>
@@ -1099,7 +1101,7 @@ export default function Home() {
                   <div className="flex justify-end space-x-3 mt-6">
                     <button
                       onClick={() => setShowFetchModal(false)}
-                      className="px-4 py-2 border rounded text-gray-700 hover:bg-gray-100"
+                      className="px-4 py-2 border rounded text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
                     >
                       {t('home.cancel')}
                     </button>
@@ -1119,11 +1121,11 @@ export default function Home() {
       </div>
       
       {/* 页脚 */}
-      <footer className="mt-16 pt-8 border-t border-gray-200 text-center text-gray-600 text-sm">
+      <footer className="mt-16 pt-8 border-t border-gray-200 dark:border-gray-700 text-center text-gray-600 dark:text-gray-400 text-sm">
         <p>Minecraft MOTD 生成器 v0.4.0</p>
         <div className="mt-2 flex justify-center items-center">
           <a href="http://www.beian.gov.cn/portal/registerSystemInfo" target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center mx-2">
-            <Image src="/beian.png" alt="备案" width={16} height={16} className="mr-1" />
+            <Image src="/beian.png" alt="备案" width={16} height={16} className="mr-1 dark:invert" />
             粤公网安备42050302000448号
           </a>
           <span className="mx-2">•</span>

@@ -94,13 +94,13 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ color, onChange }) => {
   return (
     <div className="relative" ref={pickerRef}>
       <div 
-        className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
+        className="w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer"
         style={{ backgroundColor: color }}
         onClick={() => setShowPicker(!showPicker)}
       />
       
       {showPicker && (
-        <div className="absolute z-10 mt-2 p-3 bg-white rounded shadow-lg">
+        <div className="absolute z-10 mt-2 p-3 bg-white dark:bg-gray-800 rounded shadow-lg">
           <canvas 
             ref={canvasRef}
             width={200}
@@ -110,14 +110,14 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ color, onChange }) => {
           />
           <div className="mt-2 flex items-center">
             <div 
-              className="w-6 h-6 rounded mr-2 border border-gray-300"
+              className="w-6 h-6 rounded mr-2 border border-gray-300 dark:border-gray-600"
               style={{ backgroundColor: color }}
             />
             <input 
               type="text" 
               value={color} 
               onChange={(e) => onChange(e.target.value)}
-              className="px-2 py-1 border rounded text-sm"
+              className="px-2 py-1 border rounded text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
               aria-label="颜色代码"
               placeholder="颜色代码"
             />

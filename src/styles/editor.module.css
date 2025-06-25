@@ -5,6 +5,11 @@
   border: 1px solid #e5e7eb;
 }
 
+/* 暗色模式下使用深色边框 */
+:global(.dark) .colorSwatch {
+  border-color: #4b5563;
+}
+
 .gradientPreview {
   width: 100%;
   height: 1rem;

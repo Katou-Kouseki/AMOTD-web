@@ -3,7 +3,9 @@
   "description": "一个现代化的Minecraft服务器MOTD生成和预览工具，支持完整的Minecraft格式化代码和自定义服务器图标。",
   "common": {
     "locale": "zh",
-    "language": "语言"
+    "language": "语言",
+    "darkMode": "切换到深色模式",
+    "lightMode": "切换到浅色模式"
   },
   "editor": {
     "formatToolbar": "格式工具栏",
