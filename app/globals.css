@@ -3,6 +3,9 @@
 @font-face {
   font-family: 'Minecraft';
   src: url('/fonts/Minecraft.ttf') format('truetype');
+  font-display: swap;
+  font-weight: normal;
+  font-style: normal;
 }
 
 :root {

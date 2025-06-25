@@ -30,6 +30,14 @@ export default async function RootLayout({
   return (
     <html suppressHydrationWarning>
       <head>
+        {/* 预加载Minecraft字体 */}
+        <link 
+          rel="preload" 
+          href="/fonts/Minecraft.ttf" 
+          as="font" 
+          type="font/ttf" 
+          crossOrigin="anonymous" 
+        />
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
         <Script id="dark-mode-manager" strategy="beforeInteractive">
           {`
